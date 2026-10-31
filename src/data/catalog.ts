@@ -40,10 +40,29 @@ export { aboutImg, offerImg };
 
 export type ProductType = "readymade" | "rental";
 
+export type ProductSizeStock = {
+  size: string;
+  stock: number;
+};
+
+export type ProductColorVariant = {
+  id: string;
+  name: string;
+  stock: number;
+  image?: string;
+  hasSizes?: boolean;
+  sizes?: string[];
+  sizeStocks?: ProductSizeStock[];
+};
+
 export type Product = {
   id: number;
   name: string;
+  sku?: string;
+  barcode?: string;
+  brand?: string;
   category: string;
+  subcategory?: string;
   type: ProductType;
   price: number;
   mrp: number;
@@ -55,10 +74,19 @@ export type Product = {
   sizes: string[];
   color: string;
   fabric: string;
+  sareeLength?: string;
+  offerText?: string;
+  tags?: string[];
   occasion: string;
   stock: number;
   featured: boolean;
   newArrival: boolean;
+  isPremium?: boolean;
+  isTrending?: boolean;
+  isLiveSpecial?: boolean;
+  isLimitedOffer?: boolean;
+  prebookingEnabled?: boolean;
+  colors?: ProductColorVariant[];
   active: boolean;
   available: boolean;
   image: string;
@@ -107,51 +135,19 @@ const mk = (
 
 const S = ["XS", "S", "M", "L", "XL"];
 
-export const products: Product[] = [
-  mk(1, "Royal Burgundy Velvet Gown", "Designer Gowns", "readymade", 6499, 8999, 1899, p1, "Burgundy", "Premium Velvet", "Receptions & Galas", 4.8, S, { featured: true, newArrival: true }),
-  mk(2, "Ivory Pearl Anarkali Suit", "Ethnic Wear", "readymade", 4299, 5599, 1299, p2, "Ivory", "Georgette", "Festive Evenings", 4.7, S, { featured: true }),
-  mk(3, "Rose Gold Sequin Crop Top Set", "Crop Tops", "readymade", 2699, 3499, 899, p3, "Rose Gold", "Sequin Knit", "Parties", 4.6, ["XS", "S", "M", "L"], { featured: true, newArrival: true }),
-  mk(4, "Emerald Silk Party Dress", "Party Wear", "readymade", 3899, 4999, 1099, p4, "Emerald", "Mulberry Silk", "Cocktail Parties", 4.5, S),
-  mk(5, "Blush Chikankari Kurta Set", "Ethnic Wear", "readymade", 3299, 4199, 999, p5, "Blush", "Cotton Chikankari", "Day Functions", 4.7, S, { featured: true }),
-  mk(6, "Midnight Blue Evening Gown", "Designer Gowns", "readymade", 7299, 9499, 2099, p6, "Midnight Blue", "Sequin Net", "Evening Soirees", 4.9, S, { featured: true }),
-  mk(7, "Peach Organza Lehenga", "Wedding Collection", "readymade", 9899, 12999, 2799, p7, "Peach", "Organza & Zari", "Weddings", 4.8, S, { newArrival: true }),
-  mk(8, "Champagne Ruffle Co-ord Set", "Crop Tops", "readymade", 2999, 3799, 949, p8, "Champagne", "Crepe", "Brunches & Parties", 4.4, ["S", "M", "L", "XL"]),
-  mk(9, "Maroon Velvet Indo-Western", "Party Wear", "readymade", 5499, 6999, 1599, p9, "Maroon", "Velvet Blend", "Sangeet & Parties", 4.6, S, { featured: true }),
-  mk(10, "Sage Draped Saree Gown", "Designer Gowns", "readymade", 4799, 6299, 1399, p10, "Sage Green", "Satin Georgette", "Receptions", 4.5, S, { newArrival: true }),
-  mk(11, "Coral Floral Maternity Dress", "Maternity Collection", "readymade", 2499, 3299, 799, p11, "Coral", "Soft Chiffon", "Baby Showers", 4.7, ["S", "M", "L", "XL", "XXL"]),
-  mk(12, "Pastel Lilac Cocktail Dress", "Party Wear", "readymade", 3199, 4099, 999, p12, "Lilac", "Lace & Crepe", "Cocktail Evenings", 4.4, ["XS", "S", "M", "L"], { featured: true }),
-  mk(13, "Regal Red Bridal Lehenga", "Wedding Collection", "rental", 42999, 52999, 5999, p13, "Red", "Raw Silk & Zardosi", "Bridal Ceremonies", 4.9, S, { featured: true }),
-  mk(14, "Golden Empress Trail Gown", "Photoshoot Collection", "rental", 18999, 23999, 3499, p14, "Gold", "Metallic Lame", "Pre-Wedding Shoots", 4.8, S, { featured: true, newArrival: true }),
-  mk(15, "White Feather Pre-Wedding Gown", "Photoshoot Collection", "rental", 16999, 21999, 2999, p15, "White", "Crepe & Feather", "Pre-Wedding Shoots", 4.9, S, { featured: true }),
-  mk(16, "Wine Velvet Maternity Trail Gown", "Maternity Collection", "rental", 14999, 18999, 2599, p16, "Wine", "Stretch Velvet", "Maternity Shoots", 4.8, ["S", "M", "L", "XL", "XXL"], { featured: true }),
-  mk(17, "Turquoise Mermaid Gown", "Designer Gowns", "rental", 15999, 19999, 2699, p17, "Turquoise", "Satin & Crystal", "Receptions", 4.6, S),
-  mk(18, "Ivory Cape Engagement Gown", "Wedding Collection", "rental", 19999, 24999, 3299, p18, "Ivory", "Structured Crepe", "Engagements", 4.8, S, { newArrival: true }),
-  mk(19, "Black Sequin Red Carpet Gown", "Party Wear", "rental", 17999, 21999, 2899, p19, "Black & Red", "Sequin Mesh", "Gala Nights", 4.7, S),
-  mk(20, "Peacock Kanjivaram Drape", "Ethnic Wear", "rental", 21999, 26999, 3199, p20, "Peacock Blue", "Kanjivaram Silk", "Traditional Ceremonies", 4.9, ["Free Size"]),
-  mk(21, "Blush Tulle Maternity Gown", "Maternity Collection", "rental", 12999, 15999, 2399, p21, "Blush", "Layered Tulle", "Maternity Shoots", 4.7, ["S", "M", "L", "XL", "XXL"], { newArrival: true }),
-  mk(22, "Copper Metallic Fusion Gown", "Photoshoot Collection", "rental", 15499, 18999, 2699, p22, "Copper", "Metallic Satin", "Fashion Photography", 4.5, S),
-  mk(23, "Royal Blue Ruffle Ball Gown", "Designer Gowns", "rental", 23999, 28999, 3899, p23, "Royal Blue", "Tulle", "Post-Wedding Celebrations", 4.9, S, { featured: true }),
-  mk(24, "Antique Gold Nauvari Ensemble", "Ethnic Wear", "rental", 13999, 16999, 2299, p24, "Antique Gold", "Paithani Silk", "Traditional Shoots", 4.8, ["Free Size"]),
-];
+export const products: Product[] = [];
 
 export type Category = {
   id: number;
   name: string;
+  slug?: string;
   image: string;
   blurb: string;
+  description?: string;
   active: boolean;
 };
 
-export const categories: Category[] = [
-  { id: 1, name: "Designer Gowns", image: cat1, blurb: "Sculpted silhouettes for grand evenings", active: true },
-  { id: 2, name: "Ethnic Wear", image: cat2, blurb: "Handpicked weaves and embroidery", active: true },
-  { id: 3, name: "Crop Tops", image: cat3, blurb: "Young, trendy and effortlessly chic", active: true },
-  { id: 4, name: "Party Wear", image: cat4, blurb: "Statement pieces for every celebration", active: true },
-  { id: 5, name: "Wedding Collection", image: cat5, blurb: "Bridal grandeur, made personal", active: true },
-  { id: 6, name: "Photoshoot Collection", image: cat6, blurb: "Camera-ready drama and trails", active: true },
-  { id: 7, name: "Maternity Collection", image: cat7, blurb: "Graceful comfort for the glow", active: true },
-  { id: 8, name: "Rental Collection", image: cat8, blurb: "Luxury looks without the price tag", active: true },
-];
+export const categories: Category[] = [];
 
 export type Banner = {
   id: number;
@@ -218,12 +214,7 @@ export type Order = {
 
 export const orderStatuses = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
 
-export const seedOrders: Order[] = [
-  { id: "GMC-1041", customer: "Sneha Patil", phone: "+91 98220 11223", date: "2026-08-04", items: [{ name: "Royal Burgundy Velvet Gown", qty: 1, size: "M", price: 6499 }], amount: 6598, payment: "UPI", status: "Delivered" },
-  { id: "GMC-1042", customer: "Rutuja Shinde", phone: "+91 90280 44556", date: "2026-08-09", items: [{ name: "Blush Chikankari Kurta Set", qty: 2, size: "L", price: 3299 }], amount: 6697, payment: "Cash on Delivery", status: "Shipped" },
-  { id: "GMC-1043", customer: "Pooja Kamble", phone: "+91 70301 99881", date: "2026-08-16", items: [{ name: "Rose Gold Sequin Crop Top Set", qty: 1, size: "S", price: 2699 }], amount: 2798, payment: "Card", status: "Processing" },
-  { id: "GMC-1044", customer: "Manasi Jadhav", phone: "+91 88880 12345", date: "2026-08-21", items: [{ name: "Emerald Silk Party Dress", qty: 1, size: "M", price: 3899 }], amount: 3998, payment: "Digital Wallet", status: "Pending" },
-];
+export const seedOrders: Order[] = [];
 
 export type Booking = {
   id: string;
@@ -232,6 +223,7 @@ export type Booking = {
   email: string;
   outfit: string;
   size: string;
+  color?: string;
   start: string;
   end: string;
   occasion: string;
@@ -239,15 +231,16 @@ export type Booking = {
   rental: number;
   deposit: number;
   status: string;
+  isCustomDesign?: boolean;
+  bust?: string;
+  waist?: string;
+  height?: string;
+  createdAt?: string;
 };
 
 export const bookingStatuses = ["Pending", "Confirmed", "Ready", "Rented", "Returned", "Cancelled"];
 
-export const seedBookings: Booking[] = [
-  { id: "RNT-2051", customer: "Aishwarya Kulkarni", phone: "+91 98501 22334", email: "aishwarya@example.com", outfit: "Regal Red Bridal Lehenga", size: "M", start: "2026-09-02", end: "2026-09-05", occasion: "Engagement", notes: "Needs blouse alteration", rental: 5999, deposit: 11998, status: "Confirmed" },
-  { id: "RNT-2052", customer: "Manasi Jadhav", phone: "+91 88880 12345", email: "manasi@example.com", outfit: "Wine Velvet Maternity Trail Gown", size: "L", start: "2026-09-11", end: "2026-09-13", occasion: "Maternity Shoot", notes: "", rental: 2599, deposit: 5198, status: "Pending" },
-  { id: "RNT-2053", customer: "Sneha Patil", phone: "+91 98220 11223", email: "sneha@example.com", outfit: "Golden Empress Trail Gown", size: "S", start: "2026-08-18", end: "2026-08-20", occasion: "Pre-Wedding Shoot", notes: "Pickup from shop", rental: 3499, deposit: 6998, status: "Returned" },
-];
+export const seedBookings: Booking[] = [];
 
 export type Customer = {
   id: number;
@@ -260,14 +253,7 @@ export type Customer = {
   status: string;
 };
 
-export const customers: Customer[] = [
-  { id: 1, name: "Sneha Patil", phone: "+91 98220 11223", email: "sneha@example.com", orders: 4, bookings: 2, spent: 28450, status: "Active" },
-  { id: 2, name: "Aishwarya Kulkarni", phone: "+91 98501 22334", email: "aishwarya@example.com", orders: 2, bookings: 3, spent: 41200, status: "Active" },
-  { id: 3, name: "Rutuja Shinde", phone: "+91 90280 44556", email: "rutuja@example.com", orders: 5, bookings: 0, spent: 18990, status: "Active" },
-  { id: 4, name: "Manasi Jadhav", phone: "+91 88880 12345", email: "manasi@example.com", orders: 1, bookings: 2, spent: 12480, status: "Active" },
-  { id: 5, name: "Pooja Kamble", phone: "+91 70301 99881", email: "pooja@example.com", orders: 3, bookings: 1, spent: 15760, status: "Inactive" },
-  { id: 6, name: "Shruti Deshpande", phone: "+91 96040 77112", email: "shruti@example.com", orders: 2, bookings: 1, spent: 9800, status: "Active" },
-];
+export const customers: Customer[] = [];
 
 export const siteContent = {
   businessName: "Gadhinglaj Models Club",
@@ -315,3 +301,62 @@ export const adminCredentials = {
 };
 
 export const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+
+export type SubCategory = {
+  id: number;
+  name: string;
+  categoryId: number;
+  categoryName: string;
+  slug?: string;
+  image?: string;
+  description?: string;
+  sizeTemplate?: string;
+  active: boolean;
+};
+
+export const seedSubCategories: SubCategory[] = [];
+
+export type Inquiry = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  subject: string;
+  message: string;
+  date: string;
+  status: "New" | "Contacted" | "Resolved";
+};
+
+export const seedInquiries: Inquiry[] = [
+  {
+    id: "INQ-301",
+    name: "Meera Patil",
+    phone: "+91 98224 55667",
+    email: "meera.patil@example.com",
+    subject: "Pre-Wedding Shoot Gown Rental",
+    message: "Hello Priyanka ji, looking for a trail gown for our pre-wedding shoot in Mahabaleshwar next month. Can we visit this Saturday for trial fitting?",
+    date: "2026-08-28",
+    status: "New",
+  },
+  {
+    id: "INQ-302",
+    name: "Aarti Deshmukh",
+    phone: "+91 97650 12345",
+    email: "aarti.d@example.com",
+    subject: "Bridal Lehenga Custom Alteration",
+    message: "Interested in the Regal Red Bridal Lehenga for my wedding reception on Nov 15th. Do you offer custom blouse tailoring?",
+    date: "2026-08-26",
+    status: "Contacted",
+  },
+  {
+    id: "INQ-303",
+    name: "Kavita Jadhav",
+    phone: "+91 94220 98765",
+    email: "kavita.j@example.com",
+    subject: "Maternity Photoshoot Gown",
+    message: "Wanted to know rental rates and availability for the Blush Tulle Maternity Gown for a baby shower shoot in Kolhapur.",
+    date: "2026-08-24",
+    status: "Resolved",
+  },
+];

@@ -1,59 +1,132 @@
 "use client";
 
+import Link from "next/link";
 import SiteLayout, { PageHero } from "@/components/site/SiteLayout";
 import { useStore } from "@/lib/store";
+import { ShieldCheckIcon, PhoneIcon } from "@/components/site/Icons";
 
-const sections = [
+const privacyPillars = [
   {
-    t: "Information we collect",
-    p: "We collect only what is needed to serve you: your name, phone number, email address and delivery address when you place an order or submit a rental request.",
+    title: "100% Client Discretion",
+    desc: "Your personal contact numbers and fitting records are strictly held within our private boutique ledger. We never share, trade, or monetize your information.",
   },
   {
-    t: "How we use it",
-    p: "Your details are used to confirm orders, arrange fittings, schedule rental pickups and returns, and share occasional offers if you have asked us to.",
+    title: "On-Device Data Storage",
+    desc: "Your shopping bag, saved wishlists, and demo order histories are safely stored exclusively in your own browser's local sandbox, giving you complete sovereign control.",
   },
   {
-    t: "Demonstration website",
-    p: "This website is a frontend demonstration. Cart, wishlist, order and booking data are stored only in your own browser's local storage and are never transmitted to a server or database.",
+    title: "Consensual Photography",
+    desc: "Boutique fitting photographs or client shoot pictures are only ever shared on our social gallery with explicit verbal or written permission from you.",
+  },
+];
+
+const policySections = [
+  {
+    title: "Information Entrusted to Us",
+    content:
+      "When you place a ready-to-wear order, request an outfit alteration, or reserve a 3-day rental gown, we collect fundamental service details: your full name, WhatsApp telephone number, email address, physical delivery destination, and bespoke measurement dimensions.",
   },
   {
-    t: "Sharing",
-    p: "We do not sell or rent customer information. Details are shared only with delivery partners where a shipment is required.",
+    title: "Purpose of Information Processing",
+    content:
+      "Your details are strictly utilized to coordinate master tailoring fittings, confirm garment availability dates, prepare dispatch parcels across Maharashtra, handle security deposit reimbursements, and notify you regarding order dispatches. We do not engage in automated cold marketing.",
   },
   {
-    t: "Photographs",
-    p: "Photographs of customers are published on our social channels only with explicit permission.",
+    title: "Third-Party Logistics & Courier Partners",
+    content:
+      "For outstation ready-to-wear deliveries, only your essential shipping address and telephone number are shared with trusted courier partners (such as Delhivery, DTDC, or Speed Post) solely for seamless transit and doorstep handover.",
   },
   {
-    t: "Your choices",
-    p: "You may ask us to correct or delete your details at any time by calling or emailing the boutique. Clearing your browser storage removes all demo data instantly.",
+    title: "Browser Storage & Session Privacy",
+    content:
+      "This modern Next.js atelier platform employs client-side LocalStorage for seamless browsing without mandatory forced sign-ups. You can wipe your browsing history, bag items, and saved addresses at any time simply by clearing your browser cache.",
+  },
+  {
+    title: "Customer Rights & Data Erasure",
+    content:
+      "You hold full rights to inspect, rectify, or request complete removal of your customer record from our boutique register. Reach out to Priyanka Desai directly to have your details erased without complication.",
   },
 ];
 
 export default function PrivacyPage() {
   const { content } = useStore();
+
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Legal"
-        title="Privacy Policy"
-        subtitle="Last updated 1 August 2026."
+        eyebrow="Trust & Security"
+        title="Privacy & Discretion Commitment"
+        subtitle="How Gadhinglaj Models Club honors client confidentiality, personal fittings, and photography consent."
       />
-      <div className="container-lux max-w-3xl space-y-8 py-14">
-        {sections.map((s) => (
-          <section key={s.t}>
-            <h2 className="font-display text-2xl text-primary">{s.t}</h2>
-            <div className="gold-rule mt-3" />
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{s.p}</p>
-          </section>
-        ))}
-        <p className="text-sm text-muted-foreground">
-          Questions? Write to{" "}
-          <a href={`mailto:${content.email}`} className="text-primary hover:underline">
-            {content.email}
-          </a>{" "}
-          or call {content.phone}.
-        </p>
+
+      <div className="container-lux max-w-4xl py-14">
+        {/* Privacy Pillars Grid */}
+        <div className="grid gap-5 md:grid-cols-3">
+          {privacyPillars.map((pillar) => (
+            <div
+              key={pillar.title}
+              className="rounded-2xl border border-gold-300/40 bg-card p-6 shadow-soft transition-transform hover:-translate-y-1"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blush text-primary">
+                <ShieldCheckIcon className="h-5 w-5 text-gold-400" />
+              </div>
+              <h3 className="mt-4 font-display text-lg text-primary">{pillar.title}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{pillar.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Detailed Policy Cards */}
+        <div className="mt-12 space-y-8">
+          {policySections.map((sec, idx) => (
+            <div
+              key={sec.title}
+              className="rounded-3xl border border-border/80 bg-card p-7 shadow-soft md:p-8"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blush text-xs font-semibold text-primary">
+                  {idx + 1}
+                </span>
+                <h2 className="font-display text-xl text-primary md:text-2xl">{sec.title}</h2>
+              </div>
+              <div className="gold-rule mt-3" />
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground md:text-base">
+                {sec.content}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Contact Atelier Privacy Officer */}
+        <div className="mt-12 overflow-hidden rounded-3xl border border-border bg-gradient-to-r from-card via-blush/30 to-card p-8 text-center shadow-soft">
+          <h3 className="font-display text-2xl text-primary">Have a Privacy Inquiry?</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            Our atelier manager personally addresses all inquiries regarding client discretion,
+            fitting records, and image permissions.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold uppercase tracking-wider">
+            <a
+              href={`mailto:${content.email}`}
+              className="rounded-full bg-primary px-6 py-3 text-primary-foreground shadow-lift transition-transform hover:-translate-y-0.5"
+            >
+              Email {content.email}
+            </a>
+            <a
+              href={`tel:${content.phone}`}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-6 py-3 text-primary transition-colors hover:bg-muted"
+            >
+              <PhoneIcon className="h-4 w-4" />
+              Call {content.phone}
+            </a>
+            <Link
+              href="/"
+              className="rounded-full border border-border px-6 py-3 text-muted-foreground transition-colors hover:text-primary"
+            >
+              Back to Home
+            </Link>
+          </div>
+        </div>
       </div>
     </SiteLayout>
   );

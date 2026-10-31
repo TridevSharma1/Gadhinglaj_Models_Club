@@ -1,0 +1,218 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import SiteLayout from "@/components/site/SiteLayout";
+import { useStore } from "@/lib/store";
+import { SparkleIcon, LockIcon } from "@/components/site/Icons";
+import { Mail, CheckCircle2, ArrowRight } from "lucide-react";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const { registerCustomer, currentUser } = useStore();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  // If already logged in, show logged-in prompt
+  if (currentUser) {
+    return (
+      <SiteLayout>
+        <div className="container-lux py-24 text-center">
+          <div className="mx-auto max-w-md rounded-3xl border border-border/80 bg-white p-8 shadow-soft">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
+            <h2 className="mt-4 font-serif text-2xl text-primary font-medium">Already Signed In</h2>
+            <p className="mt-2 text-xs text-muted-foreground">
+              You are currently signed in as <span className="font-semibold text-foreground">{currentUser.email}</span>.
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <Link
+                href="/account"
+                className="rounded-full bg-primary py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-95"
+              >
+                Go to My Account
+              </Link>
+              <Link
+                href="/shop"
+                className="rounded-full border border-border py-2.5 text-xs font-medium text-foreground hover:bg-muted"
+              >
+                Explore Catalog
+              </Link>
+            </div>
+          </div>
+        </div>
+      </SiteLayout>
+    );
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter a password.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match. Please re-enter.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await registerCustomer(email.trim(), password, confirmPassword);
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/account");
+        }, 1200);
+      } else {
+        setError(result.error || "Registration failed. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SiteLayout>
+      <div className="relative min-h-[80vh] flex items-center justify-center py-16 px-4 bg-gradient-to-b from-secondary/30 via-background to-secondary/20">
+        
+        {/* Glow backdrop */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/3 left-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-400/10 blur-3xl" />
+        </div>
+
+        <div className="relative w-full max-w-md rounded-3xl border border-border/80 bg-white p-7 sm:p-10 shadow-lift animate-fade-up">
+          
+          {/* Header */}
+          <div className="text-center">
+            <div className="mx-auto flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-[#4A0E17] to-primary font-serif text-lg font-bold text-gold-300 shadow-md">
+              GMC
+            </div>
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gold-600">
+              <SparkleIcon className="h-3 w-3" />
+              Gadhinglaj Models Club
+            </p>
+            <h1 className="mt-1 font-serif text-2xl sm:text-3xl font-medium text-primary">
+              Create Your Account
+            </h1>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Register to save favorite looks, book rental fittings &amp; track orders.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleRegister} className="mt-7 space-y-4">
+            
+            {/* 1. Email Field */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full rounded-xl border border-border/80 bg-background/50 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+
+            {/* 2. Password Field */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full rounded-xl border border-border/80 bg-background/50 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+                <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+
+            {/* 3. Confirm Password Field */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your password"
+                  className="w-full rounded-xl border border-border/80 bg-background/50 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+                <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+
+            {/* Error Banner */}
+            {error && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 animate-fade-in">
+                {error}
+              </div>
+            )}
+
+            {/* Success Banner */}
+            {success && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>Account created successfully! Taking you to your atelier dashboard…</span>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || success}
+              className="w-full mt-2 rounded-xl bg-primary py-3 text-xs font-semibold uppercase tracking-widest text-primary-foreground shadow-lift transition-transform hover:-translate-y-0.5 hover:opacity-95 disabled:opacity-50"
+            >
+              {loading ? "Creating Account..." : "Create Account"}
+            </button>
+          </form>
+
+          {/* Footer Navigation */}
+          <div className="mt-6 border-t border-border/60 pt-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Already have an account?{" "}
+              <Link href="/login" className="font-semibold text-primary hover:underline">
+                Sign in here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </SiteLayout>
+  );
+}

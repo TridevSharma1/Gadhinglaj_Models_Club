@@ -1,4 +1,5 @@
 import { inr, type Category } from "@/data/catalog";
+import { SlidersHorizontal, RotateCcw } from "lucide-react";
 
 export type Filters = {
   q: string;
@@ -28,17 +29,17 @@ export const sortOptions = ["Newest", "Price Low to High", "Price High to Low", 
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+    <div className="block">
+      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
         {label}
       </span>
       {children}
-    </label>
+    </div>
   );
 }
 
-const select =
-  "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-rose";
+const selectClass =
+  "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-rose";
 
 export default function SearchFilter({
   filters,
@@ -58,88 +59,131 @@ export default function SearchFilter({
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setFilters({ ...filters, [k]: v });
 
   return (
-    <aside className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-soft">
-      <Field label="Search">
+    <aside className="space-y-6 rounded-3xl border border-border/80 bg-card p-6 shadow-soft">
+      <div className="flex items-center justify-between border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+          <h3 className="font-display text-xl text-primary font-medium">Refine Edit</h3>
+        </div>
+        <button
+          onClick={() => setFilters(defaultFilters)}
+          className="flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reset
+        </button>
+      </div>
+
+      {/* Keyword Search */}
+      <Field label="Search by keyword">
         <input
           value={filters.q}
           onChange={(e) => set("q", e.target.value)}
-          placeholder="Search outfits…"
-          className={select}
+          placeholder="e.g. Velvet, Gown, Red…"
+          className={selectClass}
         />
       </Field>
 
-      <Field label="Category">
-        <select value={filters.category} onChange={(e) => set("category", e.target.value)} className={select}>
+      {/* Outfit Format (All / Ready-Made / Rental) */}
+      <Field label="Acquisition Type">
+        <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-secondary/80 border border-border">
+          {["All", "Ready-Made", "Rental"].map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => set("type", t)}
+              className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                filters.type === t
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {/* Category Dropdown */}
+      <Field label="Atelier Collection">
+        <select value={filters.category} onChange={(e) => set("category", e.target.value)} className={selectClass}>
           {["All", ...categories.map((c) => c.name)].map((c) => (
             <option key={c}>{c}</option>
           ))}
         </select>
       </Field>
 
-      <Field label="Type">
-        <select value={filters.type} onChange={(e) => set("type", e.target.value)} className={select}>
-          {["All", "Ready-Made", "Rental"].map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
+      {/* Price Slider */}
+      <Field label={`Budget Up To: ${inr(filters.maxPrice)}`}>
+        <div className="space-y-2 pt-1">
+          <input
+            type="range"
+            min={1000}
+            max={50000}
+            step={500}
+            value={filters.maxPrice}
+            onChange={(e) => set("maxPrice", Number(e.target.value))}
+            className="w-full accent-[var(--primary)] cursor-pointer"
+          />
+          <div className="flex justify-between text-[11px] text-muted-foreground font-light">
+            <span>{inr(1000)}</span>
+            <span>{inr(50000)}</span>
+          </div>
+        </div>
       </Field>
 
-      <Field label={`Max Price — ${inr(filters.maxPrice)}`}>
-        <input
-          type="range"
-          min={1000}
-          max={50000}
-          step={500}
-          value={filters.maxPrice}
-          onChange={(e) => set("maxPrice", Number(e.target.value))}
-          className="w-full accent-[var(--primary)]"
-        />
-      </Field>
-
-      <Field label="Size">
-        <select value={filters.size} onChange={(e) => set("size", e.target.value)} className={select}>
+      {/* Sizes Pill Selector */}
+      <Field label="Available Size">
+        <div className="flex flex-wrap gap-1.5">
           {["All", ...sizes].map((s) => (
-            <option key={s}>{s}</option>
+            <button
+              key={s}
+              type="button"
+              onClick={() => set("size", s)}
+              className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                filters.size === s
+                  ? "bg-primary text-primary-foreground font-semibold"
+                  : "border border-border bg-background hover:bg-blush text-muted-foreground"
+              }`}
+            >
+              {s}
+            </button>
           ))}
-        </select>
+        </div>
       </Field>
 
-      <Field label="Colour">
-        <select value={filters.color} onChange={(e) => set("color", e.target.value)} className={select}>
-          {["All", ...colors].map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label="Occasion">
-        <select value={filters.occasion} onChange={(e) => set("occasion", e.target.value)} className={select}>
+      {/* Occasion */}
+      <Field label="Celebration / Occasion">
+        <select value={filters.occasion} onChange={(e) => set("occasion", e.target.value)} className={selectClass}>
           {["All", ...occasions].map((o) => (
             <option key={o}>{o}</option>
           ))}
         </select>
       </Field>
 
-      <Field label="Minimum Rating">
-        <select
-          value={filters.minRating}
-          onChange={(e) => set("minRating", Number(e.target.value))}
-          className={select}
-        >
-          {[0, 4, 4.5, 4.8].map((r) => (
-            <option key={r} value={r}>
-              {r === 0 ? "Any rating" : `${r}+ stars`}
-            </option>
+      {/* Colour */}
+      <Field label="Colour Palette">
+        <select value={filters.color} onChange={(e) => set("color", e.target.value)} className={selectClass}>
+          {["All", ...colors].map((c) => (
+            <option key={c}>{c}</option>
           ))}
         </select>
       </Field>
 
-      <button
-        onClick={() => setFilters(defaultFilters)}
-        className="w-full rounded-full border border-border py-2.5 text-sm text-primary transition-colors hover:bg-blush"
-      >
-        Reset Filters
-      </button>
+      {/* Minimum Rating */}
+      <Field label="Minimum Rating">
+        <select
+          value={filters.minRating}
+          onChange={(e) => set("minRating", Number(e.target.value))}
+          className={selectClass}
+        >
+          {[0, 4, 4.5, 4.8].map((r) => (
+            <option key={r} value={r}>
+              {r === 0 ? "All Ratings" : `★ ${r} & Above`}
+            </option>
+          ))}
+        </select>
+      </Field>
     </aside>
   );
 }

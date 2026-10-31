@@ -4,13 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
+ * Luxury Boutique Design System
+ * Gadhinglaj Models Club — Haute Couture & Designer Rental
  */
 
 @theme inline {
@@ -19,8 +14,8 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-3xl: calc(var(--radius) + 14px);
+  --radius-4xl: calc(var(--radius) + 20px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -54,63 +49,84 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-}
-
-:root {
-  --radius: 0.9rem;
-  --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Jost", system-ui, sans-serif;
-
-  --background: oklch(0.985 0.008 70);
-  --foreground: oklch(0.26 0.012 350);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.26 0.012 350);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.26 0.012 350);
-  --primary: oklch(0.365 0.128 6);
-  --primary-foreground: oklch(0.985 0.008 70);
-  --secondary: oklch(0.94 0.022 5);
-  --secondary-foreground: oklch(0.365 0.128 6);
-  --muted: oklch(0.955 0.012 60);
-  --muted-foreground: oklch(0.53 0.015 350);
-  --accent: oklch(0.72 0.128 92);
-  --accent-foreground: oklch(0.26 0.012 350);
-  --rose: oklch(0.63 0.085 12);
-  --rose-foreground: oklch(0.99 0 0);
-  --blush: oklch(0.94 0.022 5);
-  --destructive: oklch(0.55 0.2 27);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.018 40);
-  --input: oklch(0.9 0.018 40);
-  --ring: oklch(0.63 0.085 12);
-  --chart-1: oklch(0.365 0.128 6);
-  --chart-2: oklch(0.63 0.085 12);
-  --chart-3: oklch(0.72 0.128 92);
-  --chart-4: oklch(0.6 0.09 200);
-  --chart-5: oklch(0.5 0.09 150);
-  --sidebar: oklch(0.3 0.1 5);
-  --sidebar-foreground: oklch(0.97 0.01 60);
-  --sidebar-primary: oklch(0.72 0.128 92);
-  --sidebar-primary-foreground: oklch(0.26 0.012 350);
-  --sidebar-accent: oklch(0.36 0.11 6);
-  --sidebar-accent-foreground: oklch(0.985 0.008 70);
-  --sidebar-border: oklch(0.4 0.09 6);
-  --sidebar-ring: oklch(0.72 0.128 92);
-
-  --shadow-soft: 0 10px 40px -18px oklch(0.365 0.128 6 / 0.35);
-  --shadow-lift: 0 24px 60px -28px oklch(0.365 0.128 6 / 0.45);
-  --gradient-wine: linear-gradient(135deg, oklch(0.365 0.128 6), oklch(0.45 0.11 12));
-  --gradient-gold: linear-gradient(120deg, oklch(0.78 0.11 92), oklch(0.66 0.13 70));
-}
-
-@theme inline {
   --color-rose: var(--rose);
   --color-rose-foreground: var(--rose-foreground);
   --color-blush: var(--blush);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-300: #F3E5AB;
+  --color-gold-400: #E6C280;
+  --color-gold-500: #D4AF37;
+  --color-wine-deep: var(--wine-deep);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
   --shadow-soft: var(--shadow-soft);
   --shadow-lift: var(--shadow-lift);
+  --shadow-gold: var(--shadow-gold);
+}
+
+:root {
+  --radius: 1rem;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Jost", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Rich Luxury Color Palette */
+  --background: oklch(0.99 0.005 85);
+  --foreground: oklch(0.18 0.015 350);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.015 350);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.015 350);
+
+  /* Deep Regal Wine / Burgundy */
+  --primary: oklch(0.32 0.125 10);
+  --primary-foreground: oklch(0.985 0.008 70);
+  --wine-deep: oklch(0.24 0.11 8);
+
+  /* Warm Champagne & Cashmere */
+  --secondary: oklch(0.955 0.018 70);
+  --secondary-foreground: oklch(0.32 0.125 10);
+  --muted: oklch(0.96 0.009 60);
+  --muted-foreground: oklch(0.5 0.018 350);
+
+  /* Warm Brushed Gold */
+  --accent: oklch(0.74 0.13 85);
+  --accent-foreground: oklch(0.2 0.02 350);
+  --gold: oklch(0.76 0.135 86);
+  --gold-light: oklch(0.92 0.05 88);
+
+  /* Soft Rose & Cashmere Blush */
+  --rose: oklch(0.58 0.1 14);
+  --rose-foreground: oklch(0.99 0 0);
+  --blush: oklch(0.96 0.02 20);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.91 0.015 45);
+  --input: oklch(0.91 0.015 45);
+  --ring: oklch(0.74 0.13 85);
+
+  --chart-1: oklch(0.32 0.125 10);
+  --chart-2: oklch(0.58 0.1 14);
+  --chart-3: oklch(0.74 0.13 85);
+  --chart-4: oklch(0.6 0.09 200);
+  --chart-5: oklch(0.5 0.09 150);
+
+  --sidebar: oklch(0.24 0.08 10);
+  --sidebar-foreground: oklch(0.96 0.01 60);
+  --sidebar-primary: oklch(0.76 0.135 86);
+  --sidebar-primary-foreground: oklch(0.2 0.02 350);
+  --sidebar-accent: oklch(0.3 0.1 10);
+  --sidebar-accent-foreground: oklch(0.985 0.008 70);
+  --sidebar-border: oklch(0.32 0.06 10);
+  --sidebar-ring: oklch(0.76 0.135 86);
+
+  --shadow-soft: 0 10px 30px -15px oklch(0.32 0.12 10 / 0.12);
+  --shadow-lift: 0 20px 50px -20px oklch(0.32 0.12 10 / 0.22);
+  --shadow-gold: 0 15px 35px -10px oklch(0.74 0.13 85 / 0.35);
+  --gradient-wine: linear-gradient(135deg, oklch(0.32 0.125 10), oklch(0.42 0.11 15));
+  --gradient-gold: linear-gradient(120deg, oklch(0.82 0.12 90), oklch(0.68 0.14 75));
+  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.75));
 }
 
 @layer base {
@@ -127,44 +143,60 @@
     color: var(--color-foreground);
     font-family: var(--font-body);
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
   h1,
   h2,
   h3,
+  h4,
   .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 }
 
 @utility container-lux {
   margin-inline: auto;
   width: 100%;
-  max-width: 80rem;
-  padding-inline: 1rem;
+  max-width: 82rem;
+  padding-inline: 1.25rem;
   @media (min-width: 768px) {
-    padding-inline: 2rem;
+    padding-inline: 2.25rem;
   }
 }
 
 @utility eyebrow {
   font-size: 0.72rem;
+  font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--rose);
 }
 
 @utility gold-rule {
-  height: 1px;
+  height: 1.5px;
   width: 4rem;
   background: var(--gradient-gold);
+}
+
+@utility glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+@utility gold-badge {
+  background: linear-gradient(135deg, oklch(0.82 0.12 90), oklch(0.7 0.13 75));
+  color: oklch(0.2 0.02 350);
+  box-shadow: 0 4px 15px -2px oklch(0.74 0.13 85 / 0.4);
 }
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -172,6 +204,21 @@
   }
 }
 
+@keyframes pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.9;
+  }
+}
+
 @utility animate-fade-up {
-  animation: fade-up 0.6s ease both;
+  animation: fade-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
 }

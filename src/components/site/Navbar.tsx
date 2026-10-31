@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { BagIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "./Icons";
@@ -27,20 +30,22 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
-  const navigate = useNavigate();
+  const router = useRouter();
+  const pathname = usePathname();
   const cartCount = cart.reduce((n, c) => n + c.qty, 0);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchOpen(false);
     setOpen(false);
-    navigate({ to: "/shop", search: { q: q.trim() || undefined } });
+    const trimmed = q.trim();
+    router.push(trimmed ? `/shop?q=${encodeURIComponent(trimmed)}` : "/shop");
   };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="container-lux flex h-18 items-center justify-between gap-4 py-3">
-        <Link to="/" className="group leading-none">
+        <Link href="/" className="group leading-none">
           <span className="block font-display text-xl font-semibold tracking-tight text-primary md:text-2xl">
             {content.businessName}
           </span>
@@ -48,17 +53,20 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-7 lg:flex">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              activeOptions={{ exact: l.to === "/" }}
-              className="relative text-sm tracking-wide text-foreground/80 transition-colors hover:text-primary"
-              activeProps={{ className: "text-primary font-medium" }}
-            >
-              {l.label}
-            </Link>
-          ))}
+          {links.map((l) => {
+            const isActive = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
+            return (
+              <Link
+                key={l.to}
+                href={l.to}
+                className={`relative text-sm tracking-wide transition-colors hover:text-primary ${
+                  isActive ? "font-medium text-primary" : "text-foreground/80"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
@@ -70,7 +78,7 @@ export default function Navbar() {
             <SearchIcon />
           </button>
           <Link
-            to="/wishlist"
+            href="/wishlist"
             aria-label="Wishlist"
             className="relative rounded-full p-2 text-foreground/80 transition-colors hover:bg-blush hover:text-primary"
           >
@@ -78,7 +86,7 @@ export default function Navbar() {
             <Badge count={wishlist.length} />
           </Link>
           <Link
-            to="/cart"
+            href="/cart"
             aria-label="Cart"
             className="relative rounded-full p-2 text-foreground/80 transition-colors hover:bg-blush hover:text-primary"
           >
@@ -86,7 +94,7 @@ export default function Navbar() {
             <Badge count={cartCount} />
           </Link>
           <Link
-            to="/admin/login"
+            href="/admin/login"
             aria-label="Account"
             className="hidden rounded-full p-2 text-foreground/80 transition-colors hover:bg-blush hover:text-primary sm:block"
           >
@@ -122,19 +130,23 @@ export default function Navbar() {
       {open && (
         <nav className="border-t border-border/70 bg-card lg:hidden">
           <div className="container-lux flex flex-col py-2">
-            {links.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setOpen(false)}
-                className="border-b border-border/50 py-3 text-sm tracking-wide last:border-0"
-                activeProps={{ className: "text-primary font-medium" }}
-              >
-                {l.label}
-              </Link>
-            ))}
+            {links.map((l) => {
+              const isActive = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
+              return (
+                <Link
+                  key={l.to}
+                  href={l.to}
+                  onClick={() => setOpen(false)}
+                  className={`border-b border-border/50 py-3 text-sm tracking-wide last:border-0 ${
+                    isActive ? "font-medium text-primary" : ""
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
             <Link
-              to="/admin/login"
+              href="/admin/login"
               onClick={() => setOpen(false)}
               className="py-3 text-sm text-muted-foreground"
             >

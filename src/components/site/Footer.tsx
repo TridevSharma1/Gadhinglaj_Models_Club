@@ -1,23 +1,23 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 
 const quick = [
-  { to: "/", label: "Home" },
-  { to: "/shop", label: "Shop" },
-  { to: "/rental", label: "Rental" },
-  { to: "/categories", label: "Categories" },
-  { to: "/offers", label: "Offers" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
+  { href: "/", label: "Home" },
+  { href: "/shop", label: "Shop" },
+  { href: "/rental", label: "Rental" },
+  { href: "/categories", label: "Categories" },
+  { href: "/offers", label: "Offers" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 const care = [
-  { to: "/faq", label: "FAQ" },
-  { to: "/terms", label: "Shipping Policy" },
-  { to: "/terms", label: "Return Policy" },
-  { to: "/terms", label: "Rental Policy" },
-  { to: "/privacy", label: "Privacy Policy" },
-  { to: "/terms", label: "Terms & Conditions" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/terms", label: "Shipping Policy" },
+  { href: "/terms", label: "Return Policy" },
+  { href: "/terms", label: "Rental Policy" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms & Conditions" },
 ] as const;
 
 export default function Footer() {
@@ -39,7 +39,7 @@ export default function Footer() {
           <ul className="mt-4 space-y-2.5">
             {quick.map((l) => (
               <li key={l.label}>
-                <Link to={l.to} className="text-sm text-muted-foreground hover:text-primary">
+                <Link href={l.href} className="text-sm text-muted-foreground hover:text-primary">
                   {l.label}
                 </Link>
               </li>
@@ -54,7 +54,7 @@ export default function Footer() {
           <ul className="mt-4 space-y-2.5">
             {care.map((l) => (
               <li key={l.label}>
-                <Link to={l.to} className="text-sm text-muted-foreground hover:text-primary">
+                <Link href={l.href} className="text-sm text-muted-foreground hover:text-primary">
                   {l.label}
                 </Link>
               </li>
@@ -83,7 +83,7 @@ export default function Footer() {
       <div className="border-t border-border/70">
         <div className="container-lux flex flex-col items-center justify-between gap-2 py-5 text-xs text-muted-foreground sm:flex-row">
           <p>© 2026 {content.businessName}. All Rights Reserved.</p>
-          <Link to="/admin/login" className="text-[11px] text-muted-foreground/70 hover:text-primary">
+          <Link href="/admin/login" className="text-[11px] text-muted-foreground/70 hover:text-primary">
             Admin Login
           </Link>
         </div>

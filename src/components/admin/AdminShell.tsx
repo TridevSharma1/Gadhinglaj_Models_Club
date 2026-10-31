@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { CloseIcon, MenuIcon } from "@/components/site/Icons";
@@ -27,12 +30,13 @@ export default function AdminShell({
   children: ReactNode;
 }) {
   const { admin, hydrated, logout, content } = useStore();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (hydrated && !admin) navigate({ to: "/admin/login", replace: true });
-  }, [hydrated, admin, navigate]);
+    if (hydrated && !admin) router.replace("/admin/login");
+  }, [hydrated, admin, router]);
 
   if (!hydrated || !admin)
     return (
@@ -58,29 +62,34 @@ export default function AdminShell({
           <p className="eyebrow mt-1 text-[9px]">Admin Panel</p>
         </div>
         <nav className="mt-6 space-y-1">
-          {nav.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              activeOptions={{ exact: n.to === "/admin" }}
-              onClick={() => setOpen(false)}
-              className="block rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              activeProps={{ className: "bg-sidebar-accent text-sidebar-foreground font-medium" }}
-            >
-              {n.label}
-            </Link>
-          ))}
+          {nav.map((n) => {
+            const isActive = n.to === "/admin" ? pathname === "/admin" : pathname.startsWith(n.to);
+            return (
+              <Link
+                key={n.to}
+                href={n.to}
+                onClick={() => setOpen(false)}
+                className={`block rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? "bg-sidebar-accent font-medium text-sidebar-foreground"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                }`}
+              >
+                {n.label}
+              </Link>
+            );
+          })}
           <button
             onClick={() => {
               logout();
-              navigate({ to: "/", replace: true });
+              router.replace("/");
             }}
             className="mt-3 block w-full rounded-xl px-3 py-2.5 text-left text-sm text-sidebar-primary hover:bg-sidebar-accent"
           >
             Logout
           </button>
           <Link
-            to="/"
+            href="/"
             className="block rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent"
           >
             View Website

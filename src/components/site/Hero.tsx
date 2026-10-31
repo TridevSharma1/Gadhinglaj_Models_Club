@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 
@@ -38,13 +38,13 @@ export default function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              to={active[i % active.length]!.link}
+              href={active[i % active.length]!.link}
               className="rounded-full bg-primary px-7 py-3 text-sm font-medium text-primary-foreground shadow-lift transition-transform hover:-translate-y-0.5"
             >
               {active[i % active.length]!.cta}
             </Link>
             <Link
-              to="/rental"
+              href="/rental"
               className="rounded-full border border-white/60 px-7 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
             >
               Rental Collection

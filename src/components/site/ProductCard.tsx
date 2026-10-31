@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
 import { inr, type Product } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { HeartIcon, Stars } from "./Icons";
@@ -11,7 +13,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <article className="group animate-fade-up overflow-hidden rounded-3xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift">
       <div className="relative aspect-[4/5] overflow-hidden bg-blush">
-        <Link to="/product/$id" params={{ id: String(product.id) }}>
+        <Link href={`/product/${product.id}`}>
           <img
             src={product.image}
             alt={product.name}
@@ -47,8 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </button>
         <div className="absolute inset-x-3 bottom-3 flex gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
           <Link
-            to="/product/$id"
-            params={{ id: String(product.id) }}
+            href={`/product/${product.id}`}
             className="flex-1 rounded-full border border-border bg-card/95 py-2 text-center text-xs font-medium text-primary"
           >
             Quick View
@@ -62,8 +63,7 @@ export default function ProductCard({ product }: { product: Product }) {
             </button>
           ) : (
             <Link
-              to="/rental-booking"
-              search={{ product: product.id }}
+              href={`/rental-booking?product=${product.id}`}
               className="flex-1 rounded-full bg-primary py-2 text-center text-xs font-medium text-primary-foreground"
             >
               Book Rental
@@ -75,8 +75,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="space-y-2 p-4">
         <p className="eyebrow text-[10px]">{product.category}</p>
         <Link
-          to="/product/$id"
-          params={{ id: String(product.id) }}
+          href={`/product/${product.id}`}
           className="block font-display text-lg leading-snug text-foreground hover:text-primary"
         >
           {product.name}

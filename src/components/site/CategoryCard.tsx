@@ -1,11 +1,10 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import type { Category } from "@/data/catalog";
 
 export default function CategoryCard({ category }: { category: Category }) {
   return (
     <Link
-      to="/shop"
-      search={{ category: category.name }}
+      href={`/shop?category=${encodeURIComponent(category.name)}`}
       className="group animate-fade-up relative block overflow-hidden rounded-3xl border border-border shadow-soft"
     >
       <div className="aspect-[3/4] overflow-hidden bg-blush">

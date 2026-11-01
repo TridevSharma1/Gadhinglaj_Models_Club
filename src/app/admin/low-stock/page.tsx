@@ -8,9 +8,10 @@ import { useStore } from "@/lib/store";
 import { SparkleIcon } from "@/components/site/Icons";
 import {
   analyzeProductStock,
-  updateProductStockDetails,
+  getProductVariants,
+  updateVariantSizeStock,
+  saveAllVariants,
   type ProductStockAnalysis,
-  type SizeStockInfo,
 } from "@/lib/stock-utils";
 import {
   AlertTriangle,
@@ -24,10 +25,12 @@ import {
   Minus,
   ExternalLink,
   ChevronDown,
-  Info,
+  Palette,
+  Eye,
+  SlidersHorizontal,
 } from "lucide-react";
 
-type FilterMode = "all" | "product" | "size" | "out_of_stock";
+type FilterMode = "all" | "product" | "variant" | "out_of_stock";
 
 export default function AdminLowStockPage() {
   const { products, categories, update, saveProduct, deleteProduct } = useStore();
@@ -36,11 +39,11 @@ export default function AdminLowStockPage() {
   const [catFilter, setCatFilter] = useState("All");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [selectedSizeFilter, setSelectedSizeFilter] = useState<string>("All");
+  const [selectedColorFilter, setSelectedColorFilter] = useState<string>("All");
 
   const [viewAnalysis, setViewAnalysis] = useState<ProductStockAnalysis | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [editColorIdx, setEditColorIdx] = useState<number>(0);
-  const [editSizeDrafts, setEditSizeDrafts] = useState<{ [size: string]: number }>({});
+  const [editVariantsDraft, setEditVariantsDraft] = useState<ProductColorVariant[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [restockNotice, setRestockNotice] = useState<string | null>(null);
 
@@ -49,7 +52,7 @@ export default function AdminLowStockPage() {
     return products.map((p) => analyzeProductStock(p, threshold));
   }, [products, threshold]);
 
-  // Distinct sizes available across the entire catalog for filtering
+  // Distinct sizes available across the catalog
   const allAvailableSizes = useMemo(() => {
     const set = new Set<string>();
     analyzedProducts.forEach((item) => {
@@ -58,7 +61,18 @@ export default function AdminLowStockPage() {
     return Array.from(set).sort();
   }, [analyzedProducts]);
 
-  // Distinct categories from products
+  // Distinct colors available across the catalog
+  const allAvailableColors = useMemo(() => {
+    const set = new Set<string>();
+    analyzedProducts.forEach((item) => {
+      item.variants.forEach((c) => {
+        if (c.name) set.add(c.name);
+      });
+    });
+    return ["All", ...Array.from(set).sort()];
+  }, [analyzedProducts]);
+
+  // Distinct categories
   const categoryList = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => {
@@ -67,7 +81,7 @@ export default function AdminLowStockPage() {
     return ["All", ...Array.from(set).sort()];
   }, [products]);
 
-  // Filtering based on search query, category, filterMode, and specific size
+  // Filtering based on search query, category, filterMode, specific size and color
   const filteredAnalyses = useMemo(() => {
     return analyzedProducts.filter((item) => {
       const p = item.product;
@@ -75,6 +89,29 @@ export default function AdminLowStockPage() {
       // Category filter
       if (catFilter !== "All" && p.category !== catFilter) {
         return false;
+      }
+
+      // Color filter
+      if (selectedColorFilter !== "All") {
+        const hasColor = item.variants.some(
+          (c) => (c.name || "").toLowerCase() === selectedColorFilter.toLowerCase()
+        );
+        if (!hasColor) return false;
+      }
+
+      // Specific size filter
+      if (selectedSizeFilter !== "All") {
+        const hasLowSizeInVariant = item.variants.some((c) =>
+          c.sizeStocks?.some(
+            (s) => s.size === selectedSizeFilter && s.stock <= threshold
+          )
+        );
+        const overallSizeObj = item.sizeStocks.find((s) => s.size === selectedSizeFilter);
+        const hasLowSizeOverall = overallSizeObj ? overallSizeObj.stock <= threshold : false;
+
+        if (!hasLowSizeInVariant && !hasLowSizeOverall) {
+          return false;
+        }
       }
 
       // Search query (matches name, category, subcategory, sku, barcode, color, or sizes)
@@ -85,7 +122,7 @@ export default function AdminLowStockPage() {
         const matchSub = (p.subcategory || "").toLowerCase().includes(query);
         const matchSku = (p.sku || "").toLowerCase().includes(query);
         const matchBarcode = (p.barcode || "").toLowerCase().includes(query);
-        const matchColor = (p.color || "").toLowerCase().includes(query);
+        const matchColor = item.variants.some((c) => (c.name || "").toLowerCase().includes(query));
         const matchSize = item.sizeStocks.some((s) => s.size.toLowerCase().includes(query));
 
         if (!matchName && !matchCat && !matchSub && !matchSku && !matchBarcode && !matchColor && !matchSize) {
@@ -93,37 +130,34 @@ export default function AdminLowStockPage() {
         }
       }
 
-      // Specific size filter (if user wants to see only outfits low in e.g. "M")
-      if (selectedSizeFilter !== "All") {
-        const sizeObj = item.sizeStocks.find((s) => s.size === selectedSizeFilter);
-        if (!sizeObj || sizeObj.stock > threshold) {
-          return false;
-        }
-      }
-
       // Filter Mode condition
       switch (filterMode) {
         case "product":
-          // Low in total product quantity
           return item.isProductLow || item.isProductOutOfStock;
-        case "size":
-          // Low in at least one size quantity
-          return item.hasLowSizes || item.hasOutOfStockSizes;
+        case "variant":
+          return (
+            item.hasLowSizes ||
+            item.hasOutOfStockSizes ||
+            item.variants.some((c) => c.stock <= threshold)
+          );
         case "out_of_stock":
-          // Completely depleted either at product level or any size level
-          return item.isProductOutOfStock || item.hasOutOfStockSizes;
+          return (
+            item.isProductOutOfStock ||
+            item.hasOutOfStockSizes ||
+            item.variants.some((c) => c.stock === 0 || c.sizeStocks?.some((s) => s.stock === 0))
+          );
         case "all":
         default:
-          // Low either by total product quantity OR any size quantity
           return (
             item.isProductLow ||
             item.isProductOutOfStock ||
             item.hasLowSizes ||
-            item.hasOutOfStockSizes
+            item.hasOutOfStockSizes ||
+            item.variants.some((c) => c.stock <= threshold)
           );
       }
     });
-  }, [analyzedProducts, q, catFilter, filterMode, selectedSizeFilter, threshold]);
+  }, [analyzedProducts, q, catFilter, filterMode, selectedSizeFilter, selectedColorFilter, threshold]);
 
   // Overall catalog metrics
   const criticalCount = useMemo(() => {
@@ -134,37 +168,43 @@ export default function AdminLowStockPage() {
     return analyzedProducts.filter((item) => item.isProductOutOfStock).length;
   }, [analyzedProducts]);
 
-  const depletedSizesCount = useMemo(() => {
-    return analyzedProducts.reduce((acc, item) => acc + item.outOfStockSizes.length, 0);
+  const depletedVariantsCount = useMemo(() => {
+    return analyzedProducts.reduce((acc, item) => {
+      const outSizes = item.variants.reduce((cAcc, c) => {
+        return cAcc + (c.sizeStocks ? c.sizeStocks.filter((s) => s.stock === 0).length : (c.stock === 0 ? 1 : 0));
+      }, 0);
+      return acc + outSizes;
+    }, 0);
   }, [analyzedProducts]);
 
-  const lowSizesCount = useMemo(() => {
-    return analyzedProducts.reduce((acc, item) => acc + item.lowSizes.length, 0);
-  }, [analyzedProducts]);
+  const lowVariantsCount = useMemo(() => {
+    return analyzedProducts.reduce((acc, item) => {
+      const lowSizes = item.variants.reduce((cAcc, c) => {
+        return cAcc + (c.sizeStocks ? c.sizeStocks.filter((s) => s.stock > 0 && s.stock <= threshold).length : (c.stock > 0 && c.stock <= threshold ? 1 : 0));
+      }, 0);
+      return acc + lowSizes;
+    }, 0);
+  }, [analyzedProducts, threshold]);
 
   const showTemporaryNotice = (msg: string) => {
     setRestockNotice(msg);
     setTimeout(() => setRestockNotice(null), 4000);
   };
 
-  // Quick Restock an entire product's total stock
-  const quickRestockProduct = async (p: Product, addQty: number) => {
-    const analysis = analyzeProductStock(p, threshold);
-    const updatedSizeDrafts: { [size: string]: number } = {};
+  // Quick Restock a specific size within a specific color variant
+  const quickRestockColorSize = async (
+    p: Product,
+    colorIdx: number,
+    sizeName: string,
+    addQty: number
+  ) => {
+    const variants = getProductVariants(p);
+    const targetCol = variants[colorIdx] || variants[0];
+    const currentQty =
+      targetCol.sizeStocks?.find((s) => s.size === sizeName)?.stock ?? 0;
+    const newQty = currentQty + addQty;
 
-    if (analysis.sizeStocks.length > 0) {
-      // Distribute evenly among all sizes, prioritizing depleted sizes
-      const evenAdd = Math.floor(addQty / analysis.sizeStocks.length);
-      const rem = addQty % analysis.sizeStocks.length;
-
-      analysis.sizeStocks.forEach((s, idx) => {
-        updatedSizeDrafts[s.size] = s.stock + evenAdd + (idx === 0 ? rem : 0);
-      });
-    } else {
-      updatedSizeDrafts["Standard"] = p.stock + addQty;
-    }
-
-    const updatedProduct = updateProductStockDetails(p, updatedSizeDrafts, 0);
+    const updatedProduct = updateVariantSizeStock(p, colorIdx, sizeName, newQty);
 
     // Optimistic update
     update(
@@ -174,23 +214,46 @@ export default function AdminLowStockPage() {
 
     try {
       await saveProduct(updatedProduct);
-      showTemporaryNotice(`Added +${addQty} units to "${p.name}". Stock updated.`);
+      showTemporaryNotice(
+        `Added +${addQty} to ${targetCol.name || "Shade"} [Size ${sizeName}].`
+      );
     } catch (err: any) {
-      console.error("Failed to save quick restock:", err);
-      showTemporaryNotice(`Error saving restock: ${err.message || "Failed to persist"}`);
+      console.error("Failed to save size restock:", err);
+      showTemporaryNotice(`Error saving size restock: ${err.message || "Failed"}`);
     }
   };
 
-  // Quick Restock a specific size of a product directly
-  const quickRestockSize = async (p: Product, sizeName: string, addQty: number) => {
-    const analysis = analyzeProductStock(p, threshold);
-    const updatedSizeDrafts: { [size: string]: number } = {};
+  // Quick Restock an entire product's total stock
+  const quickRestockProduct = async (p: Product, addQty: number) => {
+    const variants = getProductVariants(p);
+    if (!variants.length) return;
 
-    analysis.sizeStocks.forEach((s) => {
-      updatedSizeDrafts[s.size] = s.size === sizeName ? s.stock + addQty : s.stock;
+    // Distribute among colors and their sizes
+    const evenPerColor = Math.floor(addQty / variants.length);
+    const remPerColor = addQty % variants.length;
+
+    const updatedVariants = variants.map((c, cIdx) => {
+      const colAdd = evenPerColor + (cIdx === 0 ? remPerColor : 0);
+      if (c.sizeStocks && c.sizeStocks.length > 0) {
+        const evenPerSize = Math.floor(colAdd / c.sizeStocks.length);
+        const remPerSize = colAdd % c.sizeStocks.length;
+        const updatedStocks = c.sizeStocks.map((s, sIdx) => ({
+          ...s,
+          stock: s.stock + evenPerSize + (sIdx === 0 ? remPerSize : 0),
+        }));
+        return {
+          ...c,
+          sizeStocks: updatedStocks,
+          stock: updatedStocks.reduce((sum, s) => sum + s.stock, 0),
+        };
+      }
+      return {
+        ...c,
+        stock: c.stock + colAdd,
+      };
     });
 
-    const updatedProduct = updateProductStockDetails(p, updatedSizeDrafts, 0);
+    const updatedProduct = saveAllVariants(p, updatedVariants);
 
     update(
       "products",
@@ -199,10 +262,10 @@ export default function AdminLowStockPage() {
 
     try {
       await saveProduct(updatedProduct);
-      showTemporaryNotice(`Added +${addQty} units to Size "${sizeName}" of "${p.name}".`);
+      showTemporaryNotice(`Replenished +${addQty} units across "${p.name}".`);
     } catch (err: any) {
-      console.error("Failed to save size restock:", err);
-      showTemporaryNotice(`Error saving size restock: ${err.message || "Failed to persist"}`);
+      console.error("Failed to save product restock:", err);
+      showTemporaryNotice(`Error saving restock: ${err.message || "Failed"}`);
     }
   };
 
@@ -213,7 +276,6 @@ export default function AdminLowStockPage() {
         await deleteProduct(id);
         showTemporaryNotice("Product deleted from catalog.");
       } catch (err: any) {
-        // Fallback store update
         update(
           "products",
           products.filter((p) => p.id !== id)
@@ -226,20 +288,46 @@ export default function AdminLowStockPage() {
   // Open Edit Stock Modal for a product
   const openEditModal = (p: Product) => {
     setEditProduct(p);
-    setEditColorIdx(0);
+    const variants = getProductVariants(p);
+    setEditVariantsDraft(JSON.parse(JSON.stringify(variants)));
+  };
 
-    const analysis = analyzeProductStock(p, threshold);
-    const initialDrafts: { [size: string]: number } = {};
-
-    if (analysis.sizeStocks.length > 0) {
-      analysis.sizeStocks.forEach((s) => {
-        initialDrafts[s.size] = s.stock;
+  // Handle single size change in Edit Modal
+  const handleEditModalSizeChange = (colorIdx: number, sizeName: string, newQty: number) => {
+    const safeQty = Math.max(0, isNaN(newQty) ? 0 : newQty);
+    setEditVariantsDraft((prev) => {
+      return prev.map((col, idx) => {
+        if (idx !== colorIdx) return col;
+        const currentSizes = col.sizeStocks && col.sizeStocks.length > 0 ? [...col.sizeStocks] : [];
+        const existingIdx = currentSizes.findIndex((s) => s.size === sizeName);
+        if (existingIdx >= 0) {
+          currentSizes[existingIdx] = { ...currentSizes[existingIdx], stock: safeQty };
+        } else {
+          currentSizes.push({ size: sizeName, stock: safeQty });
+        }
+        const newColorTotal = currentSizes.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
+        return {
+          ...col,
+          hasSizes: true,
+          sizeStocks: currentSizes,
+          stock: newColorTotal,
+        };
       });
-    } else {
-      initialDrafts["Standard"] = p.stock;
-    }
+    });
+  };
 
-    setEditSizeDrafts(initialDrafts);
+  // Handle color total stock change (for colors without sizes)
+  const handleEditModalColorStockChange = (colorIdx: number, newQty: number) => {
+    const safeQty = Math.max(0, isNaN(newQty) ? 0 : newQty);
+    setEditVariantsDraft((prev) => {
+      return prev.map((col, idx) => {
+        if (idx !== colorIdx) return col;
+        return {
+          ...col,
+          stock: safeQty,
+        };
+      });
+    });
   };
 
   // Save changes from Edit Stock Modal
@@ -248,11 +336,7 @@ export default function AdminLowStockPage() {
     setIsSaving(true);
 
     try {
-      const updatedProduct = updateProductStockDetails(
-        editProduct,
-        editSizeDrafts,
-        editColorIdx
-      );
+      const updatedProduct = saveAllVariants(editProduct, editVariantsDraft);
 
       // Local state optimistic update
       update(
@@ -263,7 +347,7 @@ export default function AdminLowStockPage() {
       // Backend persist to MongoDB
       await saveProduct(updatedProduct);
 
-      showTemporaryNotice(`Successfully updated inventory for "${editProduct.name}".`);
+      showTemporaryNotice(`Successfully updated colour & size inventory for "${editProduct.name}".`);
       setEditProduct(null);
     } catch (err: any) {
       console.error("Save stock error:", err);
@@ -275,13 +359,13 @@ export default function AdminLowStockPage() {
 
   // Calculate dynamic total quantity in Edit Modal
   const editModalTotalStock = useMemo(() => {
-    return Object.values(editSizeDrafts).reduce((sum, val) => sum + Math.max(0, Number(val) || 0), 0);
-  }, [editSizeDrafts]);
+    return editVariantsDraft.reduce((sum, c) => sum + (Number(c.stock) || 0), 0);
+  }, [editVariantsDraft]);
 
   return (
     <AdminShell
       title="Low Stock & Inventory Alerts"
-      subtitle="Track atelier outfits and individual sizes nearing exhaustion. Replenish inventory according to size and product quantity."
+      subtitle="Track atelier outfits, colors, and individual sizes nearing exhaustion. Replenish inventory according to color and size breakdown."
     >
       {/* Toast Notice */}
       {restockNotice && (
@@ -311,39 +395,39 @@ export default function AdminLowStockPage() {
           </div>
           <p className="mt-2 font-display text-3xl text-amber-700">{criticalCount}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Outfits with product or size stock at high exhaustion risk
+            Outfits or colors with inventory near exhaustion
           </p>
         </div>
 
-        {/* Depleted / Out of Stock Sizes */}
+        {/* Depleted Size & Color Variants */}
         <div className={card}>
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Depleted Size Variants
+              Depleted Variants (0 Qty)
             </p>
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-800 font-bold text-xs">
               <Layers className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-2 font-display text-3xl text-rose-700">{depletedSizesCount}</p>
+          <p className="mt-2 font-display text-3xl text-rose-700">{depletedVariantsCount}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Sizes completely at 0 units across atelier outfits
+            Color & size variants completely out of stock
           </p>
         </div>
 
-        {/* Low Sizes Needing Replenishment */}
+        {/* Low Stock Variants Needing Replenishment */}
         <div className={card}>
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Low Sizes (≤ {threshold})
+              Low Variants (≤ {threshold})
             </p>
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100 text-yellow-800 font-bold text-xs">
               <Package className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-2 font-display text-3xl text-yellow-800">{lowSizesCount}</p>
+          <p className="mt-2 font-display text-3xl text-yellow-800">{lowVariantsCount}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Specific size units needing replenishment soon
+            Color and size units requiring restocking
           </p>
         </div>
 
@@ -359,14 +443,14 @@ export default function AdminLowStockPage() {
           </div>
           <p className="mt-2 font-display text-3xl text-primary">{filteredAnalyses.length}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Filtered by size & product stock thresholds
+            Matching color & size low-stock threshold of ≤ {threshold}
           </p>
         </div>
       </div>
 
       {/* Filter and Threshold Controls */}
       <div className={`${card} mb-8 space-y-4`}>
-        {/* Top Filter Row: Search & Category */}
+        {/* Top Filter Row: Search & Filters */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
             <div className="relative flex-1 min-w-[240px] max-w-md">
@@ -374,7 +458,7 @@ export default function AdminLowStockPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by outfit name, size, category, SKU…"
+                placeholder="Search outfit, color, size, SKU, category…"
                 className={`${input} pl-9`}
               />
               {q && (
@@ -427,7 +511,7 @@ export default function AdminLowStockPage() {
           </div>
         </div>
 
-        {/* Bottom Filter Row: Mode Tabs & Size Specific Filter */}
+        {/* Bottom Filter Row: Mode Tabs & Color/Size Dropdowns */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4">
           {/* Mode Tabs */}
           <div className="flex flex-wrap items-center gap-2">
@@ -452,17 +536,17 @@ export default function AdminLowStockPage() {
                   : "bg-muted/60 text-muted-foreground hover:bg-muted"
               }`}
             >
-              Low Product Total (≤ {threshold})
+              Low Product Total
             </button>
             <button
-              onClick={() => setFilterMode("size")}
+              onClick={() => setFilterMode("variant")}
               className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                filterMode === "size"
+                filterMode === "variant"
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted"
               }`}
             >
-              Low by Size Quantity
+              Low by Colour &amp; Size
             </button>
             <button
               onClick={() => setFilterMode("out_of_stock")}
@@ -476,43 +560,66 @@ export default function AdminLowStockPage() {
             </button>
           </div>
 
-          {/* Filter by Specific Size */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Filter by Size:
-            </span>
-            <select
-              value={selectedSizeFilter}
-              onChange={(e) => setSelectedSizeFilter(e.target.value)}
-              className="rounded-xl border border-border/80 bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none focus:border-gold-400"
-            >
-              <option value="All">All Sizes</option>
-              {allAvailableSizes.map((sz) => (
-                <option key={sz} value={sz}>
-                  Size {sz}
-                </option>
-              ))}
-            </select>
+          {/* Color & Size Dropdowns */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filter by Colour */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Colour:
+              </span>
+              <select
+                value={selectedColorFilter}
+                onChange={(e) => setSelectedColorFilter(e.target.value)}
+                className="rounded-xl border border-border/80 bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none focus:border-gold-400"
+              >
+                {allAvailableColors.map((col) => (
+                  <option key={col} value={col}>
+                    {col === "All" ? "All Colours" : col}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter by Size */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Size:
+              </span>
+              <select
+                value={selectedSizeFilter}
+                onChange={(e) => setSelectedSizeFilter(e.target.value)}
+                className="rounded-xl border border-border/80 bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none focus:border-gold-400"
+              >
+                <option value="All">All Sizes</option>
+                {allAvailableSizes.map((sz) => (
+                  <option key={sz} value={sz}>
+                    Size {sz}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Low Stock Table */}
+      {/* Low Stock Table Styled Like Inventory */}
       <div className={`${card} overflow-hidden p-0 shadow-soft`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px] text-left text-sm">
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-border/80 bg-muted/40 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               <tr>
                 <th className="px-5 py-4">Outfit Details</th>
-                <th className="px-5 py-4">Product Quantity</th>
-                <th className="px-5 py-4">Stock According to Size</th>
-                <th className="px-5 py-4">Health & Diagnosis</th>
-                <th className="px-5 py-4 text-right">Quick Restock & Actions</th>
+                <th className="px-5 py-4">Category</th>
+                <th className="px-5 py-4">Pricing</th>
+                <th className="px-5 py-4">Colour &amp; Size Breakdown (Low Stock Highlights)</th>
+                <th className="px-5 py-4">Total Stock</th>
+                <th className="px-5 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {filteredAnalyses.map((item) => {
                 const p = item.product;
+                const variants = item.variants;
                 const isOutOfStock = item.isProductOutOfStock;
 
                 return (
@@ -531,10 +638,10 @@ export default function AdminLowStockPage() {
                             No Pic
                           </div>
                         )}
-                        <div className="min-w-0 max-w-[220px]">
+                        <div className="min-w-0 max-w-[200px]">
                           <span className="font-semibold text-foreground block truncate">{p.name}</span>
-                          <span className="text-[11px] text-muted-foreground block truncate">
-                            {p.category} {p.subcategory ? `· ${p.subcategory}` : ""}
+                          <span className="text-[10px] text-muted-foreground font-mono block">
+                            SKU: {p.sku || `GMC-${p.id + 1000}`}
                           </span>
                           <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                             <span
@@ -546,140 +653,177 @@ export default function AdminLowStockPage() {
                             >
                               {p.type === "rental" ? "Rental Studio" : "Ready-Made"}
                             </span>
-                            {p.color && (
-                              <span className="text-[10px] text-muted-foreground truncate">
-                                Color: {p.color}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
                     </td>
 
-                    {/* Product Quantity (Total Stock) */}
+                    {/* Category */}
+                    <td className="px-5 py-4 text-xs">
+                      <span className="font-medium text-primary block">{p.category}</span>
+                      {p.subcategory && (
+                        <span className="text-[10px] text-muted-foreground block">
+                          {p.subcategory}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Pricing */}
                     <td className="px-5 py-4">
-                      <div className="space-y-1.5">
+                      <span className="font-semibold text-primary">
+                        {p.type === "rental" ? inr(p.rentalPrice) : inr(p.price)}
+                      </span>
+                      <span className="block text-[10px] text-muted-foreground">
+                        {p.type === "rental" ? "Rental (3 Days)" : "Purchase"}
+                      </span>
+                    </td>
+
+                    {/* Colour & Size Breakdown (Like Inventory!) */}
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-2 max-w-[380px]">
+                        {variants.map((c, cIdx) => {
+                          const isColOut = c.stock === 0;
+                          const isColLow = c.stock > 0 && c.stock <= threshold;
+                          const hasOutSizes = c.sizeStocks?.some((s) => s.stock === 0);
+                          const hasLowSizes = c.sizeStocks?.some(
+                            (s) => s.stock > 0 && s.stock <= threshold
+                          );
+
+                          return (
+                            <div
+                              key={c.id || cIdx}
+                              className={`inline-flex flex-col rounded-xl border px-3 py-1.5 text-[11px] font-medium shadow-2xs transition-all ${
+                                isColOut
+                                  ? "border-rose-300 bg-rose-50/60 ring-1 ring-rose-200"
+                                  : isColLow || hasOutSizes
+                                  ? "border-amber-300 bg-amber-50/50"
+                                  : "border-border/80 bg-white"
+                              }`}
+                            >
+                              {/* Color Header Row */}
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-muted-foreground truncate max-w-[130px] font-semibold flex items-center gap-1.5">
+                                  <span
+                                    className={`h-2 w-2 rounded-full shrink-0 ${
+                                      isColOut
+                                        ? "bg-rose-500 ring-2 ring-rose-200"
+                                        : isColLow || hasOutSizes
+                                        ? "bg-amber-500 ring-2 ring-amber-200"
+                                        : "bg-emerald-500"
+                                    }`}
+                                  />
+                                  <span>{c.name || "Colour"}:</span>
+                                </span>
+                                <span
+                                  className={`font-bold ${
+                                    isColOut
+                                      ? "text-rose-700"
+                                      : isColLow
+                                      ? "text-amber-700"
+                                      : "text-primary"
+                                  }`}
+                                >
+                                  {c.stock === 0 ? "0 units (Out)" : `${c.stock} units`}
+                                </span>
+                              </div>
+
+                              {/* Size Stock Badges Inside Color */}
+                              {c.sizeStocks && c.sizeStocks.length > 0 && (
+                                <div className="flex flex-wrap gap-1 text-[10px] text-muted-foreground border-t border-border/50 pt-1 mt-1">
+                                  {c.sizeStocks.map((s) => {
+                                    const szOut = s.stock === 0;
+                                    const szLow = s.stock > 0 && s.stock <= threshold;
+
+                                    return (
+                                      <span
+                                        key={s.size}
+                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded transition-all ${
+                                          szOut
+                                            ? "bg-rose-100 text-rose-800 border border-rose-300 font-bold"
+                                            : szLow
+                                            ? "bg-amber-100 text-amber-900 border border-amber-300 font-bold"
+                                            : "bg-muted/70 text-foreground font-medium"
+                                        }`}
+                                        title={`${c.name || "Colour"} - Size ${s.size}: ${s.stock} units in stock${
+                                          szOut ? " (Completely Out)" : szLow ? " (Running Low)" : ""
+                                        }`}
+                                      >
+                                        <span>{s.size}:</span>
+                                        <strong className={szOut ? "text-rose-700 font-extrabold" : szLow ? "text-amber-800 font-bold" : ""}>
+                                          {s.stock}
+                                        </strong>
+                                        {szOut && (
+                                          <span className="text-[8px] uppercase tracking-tighter text-rose-600 font-bold">
+                                            out
+                                          </span>
+                                        )}
+                                        {szLow && (
+                                          <span className="text-[8px] uppercase tracking-tighter text-amber-700 font-bold">
+                                            low
+                                          </span>
+                                        )}
+
+                                        {/* Inline Quick +1 Replenisher for this specific size and color */}
+                                        <button
+                                          onClick={() => quickRestockColorSize(p, cIdx, s.size, 1)}
+                                          className="ml-0.5 rounded px-1 text-[9px] font-bold text-primary hover:bg-primary hover:text-white transition-colors"
+                                          title={`Add +1 unit to ${c.name} - Size ${s.size}`}
+                                        >
+                                          +
+                                        </button>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+
+                    {/* Total Stock */}
+                    <td className="px-5 py-4">
+                      <div className="space-y-1">
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
+                          className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                             isOutOfStock
                               ? "bg-rose-100 text-rose-800 border border-rose-300"
                               : item.totalStock <= 2
                               ? "bg-amber-100 text-amber-800 border border-amber-300"
                               : item.totalStock <= threshold
                               ? "bg-yellow-50 text-yellow-800 border border-yellow-200"
-                              : "bg-slate-100 text-slate-800 border border-slate-200"
+                              : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                           }`}
                         >
-                          <span>
-                            {isOutOfStock ? "0 Units (Out)" : `${item.totalStock} Units Total`}
-                          </span>
+                          {isOutOfStock ? "Out of Stock" : `${item.totalStock} units total`}
                         </span>
-                        <div className="text-xs font-medium text-primary">
-                          {p.type === "rental" ? inr(p.rentalPrice) : inr(p.price)}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Stock According to Size */}
-                    <td className="px-5 py-4">
-                      <div className="space-y-2 max-w-[320px]">
-                        <div className="flex flex-wrap gap-1.5">
-                          {item.sizeStocks.map((sz) => {
-                            const isSzOut = sz.stock === 0;
-                            const isSzLow = sz.stock > 0 && sz.stock <= threshold;
-
-                            return (
-                              <div
-                                key={sz.size}
-                                className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
-                                  isSzOut
-                                    ? "bg-rose-50 border-rose-300 text-rose-800 font-semibold"
-                                    : isSzLow
-                                    ? "bg-amber-50 border-amber-300 text-amber-800 font-semibold"
-                                    : "bg-background border-border/80 text-foreground"
-                                }`}
-                                title={`Size ${sz.size}: ${sz.stock} units in stock${
-                                  isSzOut ? " (Completely Out)" : isSzLow ? " (Running Low)" : ""
-                                }`}
-                              >
-                                <span className="font-bold">{sz.size}:</span>
-                                <span>{sz.stock}</span>
-                                {isSzOut && (
-                                  <span className="rounded bg-rose-200 px-1 py-0.2 text-[9px] font-bold text-rose-900 uppercase">
-                                    0
-                                  </span>
-                                )}
-                                {isSzLow && (
-                                  <span className="rounded bg-amber-200 px-1 py-0.2 text-[9px] font-bold text-amber-900">
-                                    Low
-                                  </span>
-                                )}
-
-                                {/* Inline +1 Quick Size Replenisher */}
-                                <button
-                                  onClick={() => quickRestockSize(p, sz.size, 1)}
-                                  className="ml-1 rounded px-1 text-[10px] font-bold text-primary hover:bg-primary hover:text-white transition-colors"
-                                  title={`Add +1 unit to Size ${sz.size}`}
-                                >
-                                  +1
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Color-wise Breakdown Indicator if multiple colors exist */}
-                        {p.colors && p.colors.length > 1 && (
-                          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Layers className="h-3 w-3 text-gold-500" />
-                            <span>
-                              {p.colors.length} Color Shades ({p.colors.map((c) => c.name).join(", ")})
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Health & Diagnosis */}
-                    <td className="px-5 py-4">
-                      <div className="space-y-1">
-                        <span
-                          className={`inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold ${
-                            item.statusBadge.variant === "rose"
-                              ? "bg-rose-100 text-rose-800"
-                              : item.statusBadge.variant === "amber"
-                              ? "bg-amber-100 text-amber-800"
-                              : item.statusBadge.variant === "yellow"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-emerald-100 text-emerald-800"
-                          }`}
-                        >
+                        <div className="text-[10px] text-muted-foreground block truncate max-w-[130px]">
                           {item.statusBadge.label}
-                        </span>
-                        <p className="text-[11px] text-muted-foreground line-clamp-2">
-                          {item.statusBadge.reason}
-                        </p>
+                        </div>
                       </div>
                     </td>
 
-                    {/* Quick Restock & Actions */}
+                    {/* Actions */}
                     <td className="px-5 py-4 text-right">
                       <div className="flex flex-col items-end gap-2">
                         {/* Action Buttons */}
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => setViewAnalysis(item)}
-                            className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-                            title="Inspect size & product inventory details"
+                            className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition-colors flex items-center gap-1"
+                            title="Inspect colour & size breakdown in detail"
                           >
-                            View
+                            <Eye className="h-3 w-3" />
+                            <span>View</span>
                           </button>
                           <button
                             onClick={() => openEditModal(p)}
-                            className="rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
-                            title="Edit stock according to size & product quantity"
+                            className="rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors flex items-center gap-1"
+                            title="Edit colour & size stock inventory"
                           >
-                            Edit Stock
+                            <SlidersHorizontal className="h-3 w-3" />
+                            <span>Edit Stock</span>
                           </button>
                           <button
                             onClick={() => handleRemoveProduct(p.id)}
@@ -692,18 +836,18 @@ export default function AdminLowStockPage() {
 
                         {/* Quick Total Restock Controls */}
                         <div className="flex items-center gap-1.5 pt-1 border-t border-border/50">
-                          <span className="text-[10px] text-muted-foreground mr-0.5">Replenish:</span>
+                          <span className="text-[10px] text-muted-foreground mr-0.5">Quick:</span>
                           <button
                             onClick={() => quickRestockProduct(p, 5)}
                             className="rounded-lg border border-border bg-background px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-blush hover:border-gold-300 transition-colors"
-                            title="Quick replenish +5 units distributed across sizes"
+                            title="Replenish +5 units across colors & sizes"
                           >
                             +5
                           </button>
                           <button
                             onClick={() => quickRestockProduct(p, 10)}
                             className="rounded-lg border border-border bg-background px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-blush hover:border-gold-300 transition-colors"
-                            title="Quick replenish +10 units distributed across sizes"
+                            title="Replenish +10 units across colors & sizes"
                           >
                             +10
                           </button>
@@ -722,20 +866,20 @@ export default function AdminLowStockPage() {
             <CheckCircle className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
             <p className="font-semibold text-foreground">All inventory levels are healthy</p>
             <p className="text-xs text-muted-foreground mt-1">
-              No products or sizes found at or below {threshold} units matching current filters.
+              No products, colours, or sizes found at or below {threshold} units matching current filters.
             </p>
           </div>
         )}
       </div>
 
-      {/* Product View / Inspection Modal */}
+      {/* Product View / Inspection Modal (Detailed Colour & Size Breakdown) */}
       {viewAnalysis && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-lift border border-gold-300/40 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-lift border border-gold-300/40 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-border/80 pb-4">
               <div className="flex items-center gap-2">
                 <SparkleIcon className="h-5 w-5 text-gold-400" />
-                <h3 className="font-display text-xl text-primary">Outfit & Size Inventory Inspection</h3>
+                <h3 className="font-display text-xl text-primary">Colour &amp; Size Breakdown Inspection</h3>
               </div>
               <button
                 onClick={() => setViewAnalysis(null)}
@@ -787,113 +931,112 @@ export default function AdminLowStockPage() {
                 </div>
               </div>
 
-              {/* Size-wise Detailed Table */}
+              {/* Colour-Wise Breakdown Cards Like Inventory Spotlight */}
               <div>
-                <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <Package className="h-3.5 w-3.5 text-gold-500" />
-                  <span>Stock Breakdown According to Size</span>
+                <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                  <Palette className="h-3.5 w-3.5 text-gold-500" />
+                  <span>Colour &amp; Size Breakdown Status</span>
                 </h5>
-                <div className="overflow-hidden rounded-xl border border-border/80">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-muted/40 font-semibold text-muted-foreground border-b border-border/70">
-                      <tr>
-                        <th className="px-3.5 py-2.5">Size</th>
-                        <th className="px-3.5 py-2.5">Available Quantity</th>
-                        <th className="px-3.5 py-2.5">Status</th>
-                        <th className="px-3.5 py-2.5 text-right">Quick Restock</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                      {viewAnalysis.sizeStocks.map((sz) => (
-                        <tr key={sz.size} className="hover:bg-muted/20">
-                          <td className="px-3.5 py-2.5 font-bold text-foreground">{sz.size}</td>
-                          <td className="px-3.5 py-2.5 font-semibold text-primary">
-                            {sz.stock} units
-                          </td>
-                          <td className="px-3.5 py-2.5">
-                            {sz.stock === 0 ? (
-                              <span className="rounded-full bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
-                                Depleted (0)
-                              </span>
-                            ) : sz.stock <= threshold ? (
-                              <span className="rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
-                                Low Stock
-                              </span>
-                            ) : (
-                              <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
-                                Optimal
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3.5 py-2.5 text-right">
-                            <button
-                              onClick={() => {
-                                quickRestockSize(viewAnalysis.product, sz.size, 5);
-                                setViewAnalysis((prev) => {
-                                  if (!prev) return null;
-                                  return analyzeProductStock(
-                                    {
-                                      ...prev.product,
-                                      stock: prev.product.stock + 5,
-                                    },
-                                    threshold
-                                  );
-                                });
-                              }}
-                              className="rounded border border-primary/40 bg-primary/5 px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
-                            >
-                              +5 {sz.size}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
 
-              {/* Color Details if any */}
-              {viewAnalysis.product.colors && viewAnalysis.product.colors.length > 0 && (
-                <div>
-                  <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-gold-500" />
-                    <span>Color Variations & Size Breakdown</span>
-                  </h5>
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                    {viewAnalysis.product.colors.map((c, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between rounded-xl bg-muted/20 border border-border/80 px-3 py-2 text-xs"
-                      >
-                        <span className="font-semibold text-foreground">
-                          {c.name || "Standard"}:{" "}
-                          <strong className="text-primary">{c.stock} units</strong>
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {viewAnalysis.variants.map((col, cIdx) => (
+                    <div
+                      key={col.id || cIdx}
+                      className="rounded-2xl border border-border/80 bg-muted/20 p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          {col.image ? (
+                            <img
+                              src={col.image}
+                              alt={col.name}
+                              className="h-9 w-9 rounded-lg object-cover border border-border shrink-0"
+                            />
+                          ) : (
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs shrink-0">
+                              {(col.name || "ST").slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-semibold text-sm text-foreground block">
+                              {col.name || "Standard Colour"}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Shade Total: <strong className="text-primary">{col.stock} units</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                            col.stock === 0
+                              ? "bg-rose-100 text-rose-800"
+                              : col.stock <= threshold
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}
+                        >
+                          {col.stock === 0 ? "Depleted" : col.stock <= threshold ? "Low Stock" : "In Stock"}
                         </span>
-                        {c.sizeStocks && c.sizeStocks.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {c.sizeStocks.map((s) => (
-                              <span
-                                key={s.size}
-                                className={`rounded px-1.5 py-0.5 text-[10px] ${
-                                  s.stock === 0
-                                    ? "bg-rose-100 text-rose-800 font-bold"
-                                    : s.stock <= threshold
-                                    ? "bg-amber-100 text-amber-800 font-bold"
-                                    : "bg-muted text-muted-foreground"
+                      </div>
+
+                      {/* Sizes in this color */}
+                      {col.sizeStocks && col.sizeStocks.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-border/60">
+                          {col.sizeStocks.map((sz) => {
+                            const isSzOut = sz.stock === 0;
+                            const isSzLow = sz.stock > 0 && sz.stock <= threshold;
+
+                            return (
+                              <div
+                                key={sz.size}
+                                className={`rounded-xl border p-2 flex items-center justify-between text-xs ${
+                                  isSzOut
+                                    ? "bg-rose-50 border-rose-300"
+                                    : isSzLow
+                                    ? "bg-amber-50 border-amber-300"
+                                    : "bg-white border-border/80"
                                 }`}
                               >
-                                {s.size}:{s.stock}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">Single shade</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                                <div>
+                                  <span className="font-bold text-foreground block">{sz.size}</span>
+                                  <span
+                                    className={`text-[10px] font-bold ${
+                                      isSzOut
+                                        ? "text-rose-700"
+                                        : isSzLow
+                                        ? "text-amber-800"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {sz.stock} units
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    quickRestockColorSize(viewAnalysis.product, cIdx, sz.size, 5);
+                                    setViewAnalysis((prev) => {
+                                      if (!prev) return null;
+                                      return analyzeProductStock(
+                                        updateVariantSizeStock(prev.product, cIdx, sz.size, sz.stock + 5),
+                                        threshold
+                                      );
+                                    });
+                                  }}
+                                  className="rounded border border-primary/40 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
+                                  title={`Add +5 units to ${col.name} - ${sz.size}`}
+                                >
+                                  +5
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="mt-6 flex items-center justify-between border-t border-border/80 pt-4">
@@ -914,7 +1057,7 @@ export default function AdminLowStockPage() {
                   }}
                   className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
                 >
-                  Edit Stock by Size
+                  Edit Colour &amp; Size Stock
                 </button>
                 <button
                   onClick={() => setViewAnalysis(null)}
@@ -928,14 +1071,16 @@ export default function AdminLowStockPage() {
         </div>
       )}
 
-      {/* Product Quick Edit Stock Modal (Replenish by Size and Product Quantity) */}
+      {/* Edit Colour & Size Stock Modal (Styled Exactly Like Inventory Spotlight!) */}
       {editProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-lift border border-gold-300/40 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-lift border border-gold-300/40 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-border/80 pb-4">
               <div className="flex items-center gap-2">
                 <SparkleIcon className="h-5 w-5 text-gold-400" />
-                <h3 className="font-display text-xl text-primary">Replenish by Size & Product Quantity</h3>
+                <h3 className="font-display text-xl text-primary">
+                  Colour &amp; Size-Wise Stock Replenishment
+                </h3>
               </div>
               <button
                 onClick={() => setEditProduct(null)}
@@ -946,181 +1091,224 @@ export default function AdminLowStockPage() {
             </div>
 
             <div className="mt-5 space-y-5">
-              {/* Header Info */}
-              <div className="flex items-center gap-3 bg-muted/20 p-3 rounded-2xl border border-border/60">
+              {/* Product Header */}
+              <div className="flex items-center gap-3 bg-muted/20 p-3.5 rounded-2xl border border-border/60">
                 {editProduct.image && (
                   <img
                     src={editProduct.image}
                     alt={editProduct.name}
-                    className="h-12 w-10 rounded-lg object-cover border border-border shrink-0"
+                    className="h-14 w-12 rounded-xl object-cover border border-border shrink-0 shadow-xs"
                   />
                 )}
                 <div className="min-w-0 flex-1">
                   <h4 className="font-semibold text-sm text-foreground truncate">{editProduct.name}</h4>
                   <p className="text-xs text-muted-foreground">
-                    Calculated Total Stock:{" "}
+                    Category: {editProduct.category} · Total Inventory:{" "}
                     <strong className="text-primary font-bold">{editModalTotalStock} Units</strong>
                   </p>
                 </div>
               </div>
 
-              {/* Color Variant Selector if multiple exist */}
-              {editProduct.colors && editProduct.colors.length > 1 && (
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Select Color Shade to Update:
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {editProduct.colors.map((c, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setEditColorIdx(idx);
-                          // Initialize size drafts for this color
-                          const drafts: { [size: string]: number } = {};
-                          if (c.sizeStocks && c.sizeStocks.length > 0) {
-                            c.sizeStocks.forEach((s) => (drafts[s.size] = s.stock));
-                          } else if (c.sizes && c.sizes.length > 0) {
-                            c.sizes.forEach((s) => (drafts[s] = 0));
-                          }
-                          setEditSizeDrafts(drafts);
-                        }}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition-all ${
-                          editColorIdx === idx
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background border-border text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {c.name || `Color #${idx + 1}`} ({c.stock} units)
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Color & Size Cards Like Inventory Spotlight */}
+              <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
+                {editVariantsDraft.map((col, idx) => {
+                  const sizeStocksList = col.sizeStocks || [];
+                  const hasSizes = (col.hasSizes ?? false) || sizeStocksList.length > 0;
 
-              {/* Size-wise Quantity Editor */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Quantity per Size:
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Quick add +5 to all sizes
-                      setEditSizeDrafts((prev) => {
-                        const next = { ...prev };
-                        Object.keys(next).forEach((sz) => {
-                          next[sz] = (next[sz] || 0) + 5;
-                        });
-                        return next;
-                      });
-                    }}
-                    className="text-[11px] font-semibold text-primary hover:underline"
-                  >
-                    +5 to all sizes
-                  </button>
-                </div>
-
-                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-                  {Object.keys(editSizeDrafts).map((sz) => {
-                    const currentQty = editSizeDrafts[sz] ?? 0;
-                    const isZero = currentQty === 0;
-                    const isLow = currentQty > 0 && currentQty <= threshold;
-
-                    return (
-                      <div
-                        key={sz}
-                        className={`flex items-center justify-between gap-3 rounded-2xl border p-2.5 transition-all ${
-                          isZero
-                            ? "border-rose-200 bg-rose-50/40"
-                            : isLow
-                            ? "border-amber-200 bg-amber-50/40"
-                            : "border-border/80 bg-background"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
-                            {sz}
-                          </span>
+                  return (
+                    <div
+                      key={col.id || idx}
+                      className="rounded-2xl border border-border/80 bg-white p-4 sm:p-5 hover:border-gold-300/60 transition-all shadow-2xs"
+                    >
+                      {/* Top Row: Color Details & Total */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5 mb-3.5">
+                        <div className="flex items-center gap-3">
+                          {col.image ? (
+                            <img
+                              src={col.image}
+                              alt={col.name}
+                              className="h-11 w-11 rounded-xl object-cover border border-border shadow-2xs shrink-0"
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-xs shrink-0">
+                              {(col.name || "ST").slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <div>
-                            <span className="font-semibold text-xs text-foreground block">
-                              Size {sz}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground block">
-                              {isZero ? "Depleted" : isLow ? "Running Low" : "Optimal"}
+                            <h4 className="font-semibold text-sm text-foreground">
+                              {col.name || `Colour #${idx + 1}`}
+                            </h4>
+                            <span className="text-xs text-muted-foreground">
+                              Sizes: [{sizeStocksList.map((s) => s.size).join(", ")}]
                             </span>
                           </div>
                         </div>
 
-                        {/* Controls */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditSizeDrafts((prev) => ({
-                                ...prev,
-                                [sz]: Math.max(0, (prev[sz] ?? 0) - 1),
-                              }))
-                            }
-                            className="h-8 w-8 rounded-lg border border-border bg-white flex items-center justify-center text-sm font-bold hover:bg-muted"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min="0"
-                            value={currentQty}
-                            onChange={(e) => {
-                              const val = Math.max(0, Number(e.target.value) || 0);
-                              setEditSizeDrafts((prev) => ({
-                                ...prev,
-                                [sz]: val,
-                              }));
-                            }}
-                            className="w-14 rounded-lg border border-border bg-white px-2 py-1 text-center text-xs font-bold text-foreground outline-none focus:border-gold-400"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditSizeDrafts((prev) => ({
-                                ...prev,
-                                [sz]: (prev[sz] ?? 0) + 1,
-                              }))
-                            }
-                            className="h-8 w-8 rounded-lg border border-border bg-white flex items-center justify-center text-sm font-bold hover:bg-muted"
-                          >
-                            +
-                          </button>
+                        {/* Right: Color Total Stock */}
+                        <div className="flex items-center gap-3 sm:self-center">
+                          <div className="text-right">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider block">
+                              Colour Total
+                            </span>
+                            <span className="font-display text-xl font-bold text-primary">
+                              {col.stock} <span className="text-xs font-normal text-muted-foreground">units</span>
+                            </span>
+                          </div>
 
-                          {/* Quick add +5 for this specific size */}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditSizeDrafts((prev) => ({
-                                ...prev,
-                                [sz]: (prev[sz] ?? 0) + 5,
-                              }))
-                            }
-                            className="rounded-lg border border-border bg-muted/60 px-2 py-1 text-[11px] font-semibold text-primary hover:bg-blush transition-colors"
-                            title={`Add +5 units to size ${sz}`}
-                          >
-                            +5
-                          </button>
+                          {!hasSizes && (
+                            <div className="flex items-center rounded-xl border border-border bg-background p-1">
+                              <button
+                                type="button"
+                                onClick={() => handleEditModalColorStockChange(idx, col.stock - 1)}
+                                disabled={col.stock <= 0}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-foreground hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                value={col.stock}
+                                onChange={(e) =>
+                                  handleEditModalColorStockChange(idx, Number(e.target.value) || 0)
+                                }
+                                className="w-14 text-center text-sm font-bold text-primary outline-none bg-transparent"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleEditModalColorStockChange(idx, col.stock + 1)}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-foreground hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {/* Size-wise Grid Like Inventory */}
+                      {hasSizes && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2.5">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                              <SparkleIcon className="h-3 w-3 text-gold-600" />
+                              <span>Stock by Size for &quot;{col.name || "Colour"}&quot;:</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditVariantsDraft((prev) =>
+                                  prev.map((c, i) => {
+                                    if (i !== idx) return c;
+                                    const updated = (c.sizeStocks || []).map((s) => ({
+                                      ...s,
+                                      stock: s.stock + 5,
+                                    }));
+                                    return {
+                                      ...c,
+                                      sizeStocks: updated,
+                                      stock: updated.reduce((sum, s) => sum + s.stock, 0),
+                                    };
+                                  })
+                                );
+                              }}
+                              className="text-[11px] font-semibold text-primary hover:underline"
+                            >
+                              +5 to all sizes in this shade
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                            {sizeStocksList.map((szObj) => {
+                              const sz = szObj.size;
+                              const currentQty = szObj.stock;
+                              const isSzOut = currentQty === 0;
+                              const isSzLow = currentQty > 0 && currentQty <= threshold;
+
+                              return (
+                                <div
+                                  key={sz}
+                                  className={`flex flex-col justify-between rounded-xl border p-2.5 transition-all ${
+                                    isSzOut
+                                      ? "border-rose-300 bg-rose-50/50"
+                                      : isSzLow
+                                      ? "border-amber-300 bg-amber-50/50"
+                                      : "border-border/80 bg-white"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                                      {sz}
+                                    </span>
+                                    <span
+                                      className={`text-[10px] font-bold ${
+                                        isSzOut
+                                          ? "text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded"
+                                          : isSzLow
+                                          ? "text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {isSzOut ? "Out (0)" : isSzLow ? "Low Stock" : "In Stock"}
+                                    </span>
+                                  </div>
+
+                                  {/* Stepper controls */}
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditModalSizeChange(idx, sz, currentQty - 1)}
+                                      disabled={currentQty <= 0}
+                                      className="h-8 w-8 rounded-lg border border-border bg-white hover:bg-rose-50 hover:text-rose-600 text-sm font-bold text-foreground flex items-center justify-center transition-colors disabled:opacity-40"
+                                    >
+                                      <Minus className="h-3.5 w-3.5" />
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={currentQty}
+                                      onChange={(e) =>
+                                        handleEditModalSizeChange(
+                                          idx,
+                                          sz,
+                                          Number(e.target.value) || 0
+                                        )
+                                      }
+                                      className="h-8 flex-1 w-12 rounded-lg border border-border bg-white text-center text-xs font-bold text-foreground outline-none focus:border-gold-400"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditModalSizeChange(idx, sz, currentQty + 1)}
+                                      className="h-8 w-8 rounded-lg border border-border bg-white hover:bg-emerald-50 hover:text-emerald-700 text-sm font-bold text-foreground flex items-center justify-center transition-colors"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditModalSizeChange(idx, sz, currentQty + 5)}
+                                      className="h-8 rounded-lg border border-border bg-muted/60 px-2 text-[10px] font-bold text-primary hover:bg-blush transition-colors"
+                                      title="Add +5 units"
+                                    >
+                                      +5
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Total Product Summary Banner */}
-              <div className="flex items-center justify-between rounded-2xl bg-blush/40 border border-gold-300/40 p-3.5 text-xs">
+              <div className="flex items-center justify-between rounded-2xl bg-blush/40 border border-gold-300/40 p-4 text-xs">
                 <div>
                   <span className="font-semibold text-primary block">Overall Inventory Summary</span>
                   <span className="text-[11px] text-muted-foreground block">
-                    Total will automatically sync across all {Object.keys(editSizeDrafts).length} sizes
+                    Total units automatically recalculated across all color shades &amp; sizes
                   </span>
                 </div>
                 <div className="text-right">

@@ -14,7 +14,20 @@ import {
   WhatsAppIcon,
   PhoneIcon,
 } from "./Icons";
-import { ChevronDown, ArrowRight, Scissors, User } from "lucide-react";
+import {
+  ChevronDown,
+  ArrowRight,
+  Scissors,
+  User,
+  Home,
+  Sparkles,
+  Crown,
+  Layers,
+  MapPin,
+  Phone,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
 interface NavLink {
   href: string;
@@ -60,6 +73,7 @@ const trendingSearches = [
 export default function Navbar() {
   const { cart, wishlist, content, currentUser } = useStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,6 +91,7 @@ export default function Navbar() {
 
   useEffect(() => {
     setMobileOpen(false);
+    setMobileCatalogOpen(false);
     setSearchOpen(false);
     setActiveDropdown(null);
   }, [pathname]);
@@ -427,107 +442,311 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* 4. Luxury Mobile Navigation Slide-Down Drawer */}
+      {/* 4. Luxury Off-Canvas Mobile Navigation Drawer */}
       {mobileOpen && (
-        <div className="border-b border-gold-300/40 bg-white shadow-2xl lg:hidden animate-fade-up max-h-[85vh] overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-            {/* Mobile Links List */}
-            <nav className="divide-y divide-border/60">
-              {navLinks.map((link) => {
-                const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-                return (
-                  <div key={link.label} className="py-3">
+        <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
+          {/* Backdrop Blur Overlay */}
+          <div
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
+            aria-hidden="true"
+          />
+
+          {/* Slide-In Sheet Panel */}
+          <aside className="relative z-50 flex h-full w-[85vw] max-w-sm flex-col bg-white shadow-2xl animate-slide-left overflow-hidden">
+            {/* Drawer Top Header with Crest & Close */}
+            <div className="flex items-center justify-between border-b border-gold-300/30 px-5 py-4 bg-gradient-to-r from-[#FAF7F2] via-white to-[#FAF7F2]">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3D0A17] via-[#541223] to-[#25050D] font-serif text-xs font-bold text-[#F3E5AB] shadow-sm border border-[#E6C280]/60">
+                  GMC
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-primary tracking-tight">
+                    {content.businessName}
+                  </h3>
+                  <p className="text-[9px] uppercase tracking-widest text-gold-600 font-semibold">
+                    Haute Couture Atelier
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-muted-foreground hover:text-primary transition-colors shadow-2xs"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Patron Profile / Membership Status Card */}
+            <div className="border-b border-border/70 bg-blush/40 px-5 py-3">
+              {currentUser ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-serif text-xs font-bold text-gold-300 shrink-0 shadow-xs">
+                      {(currentUser.name || currentUser.email).charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-primary truncate">
+                        {currentUser.name || "Patron Member"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {currentUser.email}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/account"
+                    onClick={() => setMobileOpen(false)}
+                    className="text-[11px] font-semibold text-primary hover:text-gold-600 underline underline-offset-2 shrink-0 ml-2"
+                  >
+                    Account →
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-primary">Couture Membership</p>
+                    <p className="text-[10px] text-muted-foreground">Sign in to save wishlist &amp; orders</p>
+                  </div>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-xs"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Scrollable Navigation Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* Main Navigation Links */}
+              <nav className="space-y-1">
+                {navLinks.map((link) => {
+                  const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                  const isCatalog = link.label === "Catalog";
+
+                  if (isCatalog) {
+                    return (
+                      <div key={link.label} className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setMobileCatalogOpen((prev) => !prev)}
+                          className="flex w-full items-center justify-between px-3.5 py-3 text-xs font-bold uppercase tracking-wider text-foreground hover:text-primary transition-colors"
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <Sparkles className="h-4 w-4 text-gold-500" />
+                            <span>Catalog &amp; Wardrobe</span>
+                          </span>
+                          <ChevronDown
+                            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                              mobileCatalogOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {mobileCatalogOpen && (
+                          <div className="space-y-1 border-t border-border/50 bg-white p-2 animate-fade-down">
+                            {link.submenu?.map((sub) => (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                onClick={() => setMobileOpen(false)}
+                                className="block rounded-xl px-3 py-2 text-xs font-medium text-foreground hover:bg-blush hover:text-primary transition-colors"
+                              >
+                                <span className="font-semibold block">{sub.label}</span>
+                                {sub.desc && (
+                                  <span className="text-[10px] text-muted-foreground font-light block">
+                                    {sub.desc}
+                                  </span>
+                                )}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
                     <Link
+                      key={link.label}
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center justify-between text-sm uppercase tracking-wider ${
-                        isActive ? "font-bold text-primary" : "text-foreground/80 hover:text-primary"
+                      className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                          : "text-foreground/80 hover:bg-muted/40 hover:text-primary"
                       }`}
                     >
-                      <span className="flex items-center gap-2">
-                        {link.label}
+                      <div className="flex items-center gap-2.5">
+                        {link.label === "Home" && <Home className="h-4 w-4" />}
+                        {link.label === "Rentals" && <Crown className="h-4 w-4 text-amber-500" />}
+                        {link.label === "Ready-Made" && <Scissors className="h-4 w-4" />}
+                        {link.label === "Collections" && <Layers className="h-4 w-4" />}
+                        {link.label === "The Atelier" && <SparkleIcon className="h-4 w-4" />}
+                        {link.label === "Visit" && <MapPin className="h-4 w-4" />}
+                        <span>{link.label}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
                         {link.badge && (
                           <span
-                            className={`rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-normal ${
-                              link.badgeColor || "bg-blush text-primary border-border"
+                            className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${
+                              isActive ? "bg-white text-primary border-transparent" : link.badgeColor || "bg-blush text-primary border-border"
                             }`}
                           >
                             {link.badge}
                           </span>
                         )}
-                      </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-                    </Link>
-
-                    {/* Submenu on mobile */}
-                    {link.submenu && (
-                      <div className="mt-2 ml-3 space-y-1.5 border-l-2 border-gold-300/40 pl-3">
-                        {link.submenu.map((sub) => (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            onClick={() => setMobileOpen(false)}
-                            className="block text-xs text-muted-foreground hover:text-primary py-0.5"
-                          >
-                            {sub.label}
-                          </Link>
-                        ))}
+                        <ChevronRight className="h-3.5 w-3.5 opacity-60" />
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </nav>
+                    </Link>
+                  );
+                })}
+              </nav>
 
-            {/* Quick Action Buttons for Mobile */}
-            <div className="space-y-3 pt-2">
-              <Link
-                href="/rental-booking"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift"
-              >
-                <SparkleIcon className="h-4 w-4 text-gold-300" />
-                Book 3-Day Rental Trial
-              </Link>
-
-              <a
-                href={`https://wa.me/91${content.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                  "Hello Priyanka ji, I would like to consult on outfit styling at Gadhinglaj Models Club.",
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-xs font-semibold uppercase tracking-wider text-white shadow-soft"
-              >
-                <WhatsAppIcon className="h-4 w-4" />
-                Direct WhatsApp Concierge
-              </a>
-            </div>
-
-            {/* Mobile Footer Metadata */}
-            <div className="rounded-2xl border border-border/80 bg-muted/30 p-4 text-center text-xs text-muted-foreground">
-              <p className="font-semibold text-primary">{content.businessName}</p>
-              <p className="mt-1 text-[11px]">{content.address}</p>
-              <div className="mt-3 flex items-center justify-center gap-4 text-[11px]">
+              {/* Quick High-Conversion CTAs */}
+              <div className="pt-2 space-y-2.5">
                 <Link
-                  href="/admin/login"
+                  href="/rental-booking"
                   onClick={() => setMobileOpen(false)}
-                  className="text-primary hover:underline"
+                  className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-95 transition-opacity"
                 >
-                  Staff Portal
+                  <SparkleIcon className="h-3.5 w-3.5 text-gold-300" />
+                  <span>Book 3-Day Rental Trial</span>
                 </Link>
-                <span>·</span>
-                <Link
-                  href="/terms"
-                  onClick={() => setMobileOpen(false)}
-                  className="hover:underline"
+
+                <a
+                  href={`https://wa.me/91${content.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                    "Hello Priyanka ji, I would like to consult on outfit styling at Gadhinglaj Models Club.",
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-xs font-semibold uppercase tracking-wider text-white shadow-soft hover:bg-emerald-700 transition-colors"
                 >
-                  Policies
-                </Link>
+                  <WhatsAppIcon className="h-4 w-4" />
+                  <span>Direct WhatsApp Concierge</span>
+                </a>
+              </div>
+
+              {/* Studio Coordinates & Contact Card */}
+              <div className="rounded-2xl border border-border/80 bg-muted/30 p-3.5 text-xs space-y-2">
+                <div className="flex items-start gap-2 text-muted-foreground font-light">
+                  <MapPin className="h-3.5 w-3.5 text-gold-500 shrink-0 mt-0.5" />
+                  <span className="text-[11px] leading-relaxed">{content.address}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/60 pt-2 text-[11px]">
+                  <a
+                    href={`tel:${content.phone.replace(/[^0-9]/g, "")}`}
+                    className="font-medium text-primary hover:underline flex items-center gap-1"
+                  >
+                    <Phone className="h-3 w-3 text-gold-500" />
+                    <span>{content.phone}</span>
+                  </a>
+                  <span className="text-muted-foreground">10 AM – 9 PM</span>
+                </div>
               </div>
             </div>
-          </div>
+
+            {/* Drawer Footer (Legal & Staff) */}
+            <div className="border-t border-border/70 bg-[#FAF7F2] px-5 py-3 flex items-center justify-between text-[11px] text-muted-foreground">
+              <Link
+                href="/admin/login"
+                onClick={() => setMobileOpen(false)}
+                className="text-primary font-semibold hover:underline"
+              >
+                Staff Portal ↗
+              </Link>
+              <span>·</span>
+              <Link
+                href="/terms"
+                onClick={() => setMobileOpen(false)}
+                className="hover:underline"
+              >
+                Rental Policies
+              </Link>
+              <span>·</span>
+              <Link
+                href="/privacy"
+                onClick={() => setMobileOpen(false)}
+                className="hover:underline"
+              >
+                Privacy
+              </Link>
+            </div>
+          </aside>
         </div>
       )}
+
+      {/* 5. Luxury Mobile App Bottom Navigation Dock */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-gold-300/30 bg-white/95 backdrop-blur-md shadow-[0_-4px_25px_rgba(0,0,0,0.07)] px-2 py-1.5 flex items-center justify-around">
+        <Link
+          href="/"
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
+            pathname === "/" ? "text-primary font-bold scale-105" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Home className="h-4.5 w-4.5" />
+          <span className="text-[10px] tracking-tight">Home</span>
+        </Link>
+
+        <Link
+          href="/shop"
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
+            pathname.startsWith("/shop") ? "text-primary font-bold scale-105" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Sparkles className="h-4.5 w-4.5" />
+          <span className="text-[10px] tracking-tight">Catalog</span>
+        </Link>
+
+        <Link
+          href="/rental"
+          className={`relative flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
+            pathname.startsWith("/rental") ? "text-primary font-bold scale-105" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span className="absolute -top-1 right-1 rounded-full bg-primary text-gold-300 text-[7.5px] font-bold px-1 py-0.2 shadow-2xs">
+            3-Day
+          </span>
+          <Crown className="h-4.5 w-4.5" />
+          <span className="text-[10px] tracking-tight">Rentals</span>
+        </Link>
+
+        <Link
+          href="/wishlist"
+          className={`relative flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
+            pathname === "/wishlist" ? "text-primary font-bold scale-105" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <HeartIcon className="h-4.5 w-4.5" />
+          {wishlist.length > 0 && (
+            <span className="absolute -top-0.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose px-1 text-[9px] font-bold text-white shadow-xs">
+              {wishlist.length}
+            </span>
+          )}
+          <span className="text-[10px] tracking-tight">Wishlist</span>
+        </Link>
+
+        <Link
+          href="/cart"
+          className={`relative flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
+            pathname === "/cart" ? "text-primary font-bold scale-105" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <BagIcon className="h-4.5 w-4.5" />
+          {cartCount > 0 && (
+            <span className="absolute -top-0.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-xs">
+              {cartCount}
+            </span>
+          )}
+          <span className="text-[10px] tracking-tight">Bag</span>
+        </Link>
+      </nav>
     </header>
   );
 }

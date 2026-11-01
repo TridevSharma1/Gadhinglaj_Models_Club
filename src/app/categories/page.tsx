@@ -192,23 +192,26 @@ export default function CategoriesPage() {
 
           {filteredCategories.length > 0 ? (
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredCategories.map((c) => {
-                const count = products.filter(
-                  (p) =>
-                    p.active &&
-                    (p.category === c.name || (c.name === "Rental Collection" && p.type === "rental")),
-                ).length;
-                const subs = subcategoriesByCategory[c.name] || [];
+              {filteredCategories
+                .filter((c) => c && c.name)
+                .map((c) => {
+                  const count = products.filter(
+                    (p) =>
+                      p &&
+                      p.active &&
+                      (p.category === c.name || (c.name === "Rental Collection" && p.type === "rental")),
+                  ).length;
+                  const subs = subcategoriesByCategory[c.name] || [];
 
-                return (
-                  <CategoryCard
-                    key={c.id}
-                    category={c}
-                    productCount={count}
-                    subcategories={subs}
-                  />
-                );
-              })}
+                  return (
+                    <CategoryCard
+                      key={c.id || c.name}
+                      category={c}
+                      productCount={count}
+                      subcategories={subs}
+                    />
+                  );
+                })}
             </div>
           ) : (
             <div className="rounded-3xl border border-dashed border-border/80 bg-white p-12 text-center shadow-soft max-w-xl mx-auto">

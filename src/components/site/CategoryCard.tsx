@@ -1,25 +1,49 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import type { Category } from "@/data/catalog";
 import { ArrowUpRight, Sparkles } from "lucide-react";
 
+const FALLBACK_CATEGORY_IMAGE = "/assets/cat1.jpg";
+
 interface CategoryCardProps {
-  category: Category;
+  category?: Category | null;
   productCount?: number;
   subcategories?: string[];
 }
 
 export default function CategoryCard({ category, productCount, subcategories = [] }: CategoryCardProps) {
+  const initialImage = category?.image && category.image.trim() !== "" ? category.image : FALLBACK_CATEGORY_IMAGE;
+  const [imgSrc, setImgSrc] = useState<string>(initialImage);
+
+  // Sync if category.image changes
+  useEffect(() => {
+    if (category?.image && category.image.trim() !== "") {
+      setImgSrc(category.image);
+    } else {
+      setImgSrc(FALLBACK_CATEGORY_IMAGE);
+    }
+  }, [category?.image]);
+
+  if (!category) return null;
+
+  const categoryName = category.name || "Curated Collection";
+  const categorySlug = category.slug || "HAUTE-COUTURE";
+  const categoryDesc = category.description || category.blurb || "Luxury handcrafted boutique silhouettes.";
+
   return (
     <Link
-      href={`/shop?category=${encodeURIComponent(category.name)}`}
+      href={`/shop?category=${encodeURIComponent(categoryName)}`}
       className="group relative block overflow-hidden rounded-3xl border border-gold-300/30 bg-card shadow-soft transition-all duration-700 hover:-translate-y-2 hover:shadow-gold hover:border-gold-400/80"
     >
       {/* High Fashion Portrait Canvas */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-blush/60">
         <img
-          src={category.image}
-          alt={category.name}
+          src={imgSrc}
+          alt={categoryName}
           loading="lazy"
+          onError={() => setImgSrc(FALLBACK_CATEGORY_IMAGE)}
           className="h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110"
         />
 
@@ -45,7 +69,7 @@ export default function CategoryCard({ category, productCount, subcategories = [
       <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col justify-end text-white z-10">
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-gold-300/90 font-mono">
-            {category.slug || "HAUTE-COUTURE"}
+            {categorySlug}
           </p>
 
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white transition-all duration-300 group-hover:bg-primary group-hover:border-gold-300 group-hover:text-gold-300 group-hover:scale-110">
@@ -54,11 +78,11 @@ export default function CategoryCard({ category, productCount, subcategories = [
         </div>
 
         <h3 className="mt-1.5 font-display text-2xl sm:text-3xl font-normal text-white group-hover:text-gold-200 transition-colors tracking-tight">
-          {category.name}
+          {categoryName}
         </h3>
 
         <p className="mt-2 text-xs leading-relaxed text-white/80 line-clamp-2 font-light">
-          {category.description || category.blurb}
+          {categoryDesc}
         </p>
 
         {/* Subcategories preview tags if available */}

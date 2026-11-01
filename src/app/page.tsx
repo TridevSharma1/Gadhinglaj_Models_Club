@@ -99,12 +99,12 @@ export default function Home() {
           title="Curated Atelier Wardrobes"
           subtitle="From bridal grandeur and reception silhouettes to casual elegance — styles handcrafted for every milestone."
         />
-        {categories.filter((c) => c.active).length > 0 ? (
+        {categories.filter((c) => c && c.name && c.active).length > 0 ? (
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {categories
-              .filter((c) => c.active)
+              .filter((c) => c && c.name && c.active)
               .map((c) => (
-                <CategoryCard key={c.id} category={c} />
+                <CategoryCard key={c.id || c.name} category={c} />
               ))}
           </div>
         ) : (

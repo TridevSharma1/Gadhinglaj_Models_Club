@@ -118,7 +118,9 @@ type Ctx = State & {
   deleteOrder: (id: string) => Promise<void> | void;
   updateOrder: (order: Order) => Promise<void> | void;
   addBooking: (booking: Booking) => void;
-  addInquiry: (inquiry: Inquiry) => void;
+  addInquiry: (inquiry: Partial<Inquiry>) => Promise<Inquiry>;
+  deleteInquiry: (id: string) => Promise<boolean>;
+  updateInquiryStatus: (id: string, status: Inquiry["status"], notes?: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean> | boolean;
   logout: () => void;
   update: <K extends keyof State>(key: K, value: State[K]) => void;
@@ -184,7 +186,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // 2. Fetch live data from MongoDB Atlas backend
   const refetchCatalog = useCallback(async () => {
     try {
-      const [catRes, subRes, prodRes, bookRes, banRes, headRes, contRes, ordRes] = await Promise.all([
+      const [catRes, subRes, prodRes, bookRes, banRes, headRes, contRes, ordRes, inqRes] = await Promise.all([
         fetch("/api/categories").then((r) => r.json()).catch(() => ({ categories: null })),
         fetch("/api/subcategories").then((r) => r.json()).catch(() => ({ subcategories: null })),
         fetch("/api/products").then((r) => r.json()).catch(() => ({ products: null })),
@@ -193,6 +195,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         fetch("/api/page-headers").then((r) => r.json()).catch(() => ({ headers: null })),
         fetch("/api/site-content").then((r) => r.json()).catch(() => ({ content: null })),
         fetch("/api/orders").then((r) => r.json()).catch(() => ({ orders: null })),
+        fetch("/api/inquiries").then((r) => r.json()).catch(() => ({ inquiries: null })),
       ]);
 
       setState((s) => ({
@@ -205,6 +208,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         pageHeaders: Array.isArray(headRes?.headers) && headRes.headers.length > 0 ? headRes.headers : s.pageHeaders,
         content: contRes?.content ? { ...s.content, ...contRes.content } : s.content,
         orders: Array.isArray(ordRes?.orders) && ordRes.orders.length > 0 ? ordRes.orders : s.orders,
+        inquiries: Array.isArray(inqRes?.inquiries) && inqRes.inquiries.length > 0 ? inqRes.inquiries : s.inquiries,
       }));
     } catch (err) {
       console.warn("Could not sync with MongoDB backend, using local state:", err);
@@ -716,7 +720,79 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           console.warn("Failed to persist rental booking to MongoDB:", e);
         }
       },
-      addInquiry: (inquiry) => setState((s) => ({ ...s, inquiries: [inquiry, ...s.inquiries] })),
+      addInquiry: async (inquiryData: Partial<Inquiry>): Promise<Inquiry> => {
+        const now = new Date();
+        const tempId = inquiryData.id || `INQ-${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, "0")}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const fullInquiry: Inquiry = {
+          id: tempId,
+          name: inquiryData.name || "",
+          phone: inquiryData.phone || "",
+          email: inquiryData.email || "",
+          subject: inquiryData.subject || "In-Studio Fitting Consultation",
+          preferredDate: inquiryData.preferredDate || "",
+          preferredTime: inquiryData.preferredTime || "",
+          message: inquiryData.message || "",
+          date: inquiryData.date || now.toISOString().split("T")[0],
+          status: inquiryData.status || "New",
+          source: inquiryData.source || "Visit Page",
+        };
+
+        // Optimistic update
+        setState((s) => ({ ...s, inquiries: [fullInquiry, ...(s.inquiries || [])] }));
+
+        try {
+          const res = await fetch("/api/inquiries", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fullInquiry),
+          });
+          const data = await res.json();
+          if (data.success && data.inquiry) {
+            setState((s) => ({
+              ...s,
+              inquiries: s.inquiries.map((x) => (x.id === tempId ? data.inquiry : x)),
+            }));
+            return data.inquiry;
+          }
+        } catch (e) {
+          console.warn("Failed to persist inquiry to MongoDB:", e);
+        }
+        return fullInquiry;
+      },
+      deleteInquiry: async (id: string): Promise<boolean> => {
+        setState((s) => ({
+          ...s,
+          inquiries: (s.inquiries || []).filter((x) => x.id !== id),
+        }));
+        try {
+          const res = await fetch(`/api/inquiries?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+          const data = await res.json();
+          return !!data.success;
+        } catch (e) {
+          console.warn("Failed to delete inquiry from MongoDB:", e);
+          return false;
+        }
+      },
+      updateInquiryStatus: async (id: string, status: Inquiry["status"], notes?: string): Promise<boolean> => {
+        setState((s) => ({
+          ...s,
+          inquiries: (s.inquiries || []).map((x) =>
+            x.id === id ? { ...x, status, ...(notes !== undefined ? { notes } : {}) } : x
+          ),
+        }));
+        try {
+          const res = await fetch("/api/inquiries", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, status, notes }),
+          });
+          const data = await res.json();
+          return !!data.success;
+        } catch (e) {
+          console.warn("Failed to update inquiry status in MongoDB:", e);
+          return false;
+        }
+      },
       login: async (email, password) => {
         try {
           const res = await fetch("/api/admin/login", {

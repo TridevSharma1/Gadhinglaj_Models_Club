@@ -402,3 +402,122 @@ export async function sendWelcomeEmail(user: {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Send an alert to boutique admin and confirmation to customer when an inquiry is received from Visit page
+ */
+export async function sendInquiryEmail(inquiry: {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  subject: string;
+  preferredDate?: string;
+  preferredTime?: string;
+  message: string;
+}) {
+  try {
+    const transporter = getTransporter();
+    const adminEmail = process.env.EMAIL_HOST_USER || "tridevx9@gmail.com";
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>New Atelier Visit Inquiry</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 24px; color: #2D1820;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 20px; border: 1px solid #E8DFD8; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+    <div style="text-align: center; border-bottom: 1px solid #F0E8E2; pb: 20px; margin-bottom: 24px;">
+      <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #9C7A4A; font-weight: 700;">Gadhinglaj Models Club Atelier</span>
+      <h2 style="margin: 8px 0 0; color: #3B1220; font-size: 24px;">New Client Visit &amp; Inquiry</h2>
+      <p style="margin: 4px 0 0; color: #71717A; font-size: 12px;">Reference: #${inquiry.id}</p>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 8px 0; color: #71717A; font-size: 13px; width: 40%;">Client Name:</td>
+        <td style="padding: 8px 0; color: #2D1820; font-weight: 600; font-size: 14px;">${inquiry.name}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 0; color: #71717A; font-size: 13px;">Phone / WhatsApp:</td>
+        <td style="padding: 8px 0; color: #2D1820; font-weight: 600; font-size: 14px;">
+          <a href="https://wa.me/91${inquiry.phone.replace(/[^0-9]/g, "")}" style="color: #059669; text-decoration: none;">${inquiry.phone} (Open WhatsApp)</a>
+        </td>
+      </tr>
+      ${inquiry.email ? `
+      <tr>
+        <td style="padding: 8px 0; color: #71717A; font-size: 13px;">Email:</td>
+        <td style="padding: 8px 0; color: #2D1820; font-size: 14px;"><a href="mailto:${inquiry.email}" style="color: #3B1220;">${inquiry.email}</a></td>
+      </tr>` : ""}
+      <tr>
+        <td style="padding: 8px 0; color: #71717A; font-size: 13px;">Occasion / Purpose:</td>
+        <td style="padding: 8px 0; color: #9C7A4A; font-weight: 600; font-size: 14px;">${inquiry.subject}</td>
+      </tr>
+      ${inquiry.preferredDate ? `
+      <tr>
+        <td style="padding: 8px 0; color: #71717A; font-size: 13px;">Preferred Visit Date:</td>
+        <td style="padding: 8px 0; color: #2D1820; font-weight: 600; font-size: 14px;">${inquiry.preferredDate} ${inquiry.preferredTime ? `(${inquiry.preferredTime})` : ""}</td>
+      </tr>` : ""}
+    </table>
+
+    <div style="background: #FAF7F2; border-radius: 12px; padding: 16px; border: 1px solid #EAE0D5; margin-bottom: 24px;">
+      <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #71717A; display: block; margin-bottom: 6px;">Client Message / Fitting Notes:</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #2D1820;">${inquiry.message || "No additional notes provided."}</p>
+    </div>
+
+    <div style="text-align: center; border-top: 1px solid #F0E8E2; pt: 20px;">
+      <a href="https://wa.me/91${inquiry.phone.replace(/[^0-9]/g, "")}?text=Hi%20${encodeURIComponent(inquiry.name)},%20thank%20you%20for%20inquiring%20with%20Gadhinglaj%20Models%20Club%20Atelier!" style="display: inline-block; background: #059669; color: #ffffff; padding: 10px 24px; border-radius: 24px; text-decoration: none; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+        Reply on WhatsApp
+      </a>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    // 1. Notify Admin
+    await transporter.sendMail({
+      from: FROM_SENDER,
+      to: adminEmail,
+      subject: `New Visit Inquiry #${inquiry.id} from ${inquiry.name} (${inquiry.subject})`,
+      html: htmlContent,
+    }).catch((err) => console.warn("Admin inquiry notification email failed:", err.message));
+
+    // 2. If client provided valid email, send confirmation
+    if (inquiry.email && inquiry.email.includes("@")) {
+      const clientContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Visit Inquiry Received</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FAF7F2; margin: 0; padding: 24px; color: #2D1820;">
+  <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 20px; border: 1px solid #E8DFD8; padding: 32px;">
+    <div style="text-align: center; border-bottom: 1px solid #F0E8E2; pb: 20px; margin-bottom: 20px;">
+      <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #9C7A4A; font-weight: 700;">Gadhinglaj Models Club Atelier</span>
+      <h2 style="margin: 8px 0 0; color: #3B1220; font-size: 22px;">Inquiry Confirmed</h2>
+      <p style="margin: 4px 0 0; color: #71717A; font-size: 12px;">Reference: #${inquiry.id}</p>
+    </div>
+    <p style="font-size: 14px; line-height: 1.6;">Dear <strong>${inquiry.name}</strong>,</p>
+    <p style="font-size: 13px; line-height: 1.6; color: #52525B;">
+      Thank you for connecting with our studio for your <strong>${inquiry.subject}</strong>${inquiry.preferredDate ? ` scheduled for trial around <strong>${inquiry.preferredDate}</strong>` : ""}.
+      Our head stylist Priyanka Desai will contact you via WhatsApp or phone shortly to confirm trial availability.
+    </p>
+    <div style="margin-top: 24px; padding: 14px; background: #FAF7F2; border-radius: 12px; font-size: 12px; color: #71717A;">
+      <strong>Atelier Location:</strong> Near Shivaji Bank, Tilak Path, Gadhinglaj<br>
+      <strong>Helpline / WhatsApp:</strong> +91 96996 20950 &middot; Open all 7 days (10 AM - 9 PM)
+    </div>
+  </div>
+</body>
+</html>`;
+
+      await transporter.sendMail({
+        from: FROM_SENDER,
+        to: inquiry.email,
+        subject: `We've Received Your Visit Inquiry #${inquiry.id} | Gadhinglaj Models Club`,
+        html: clientContent,
+      }).catch((err) => console.warn("Client inquiry confirmation email failed:", err.message));
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("sendInquiryEmail error:", error);
+    return { success: false, error: error.message };
+  }
+}

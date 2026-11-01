@@ -393,9 +393,13 @@ export type Inquiry = {
   phone: string;
   email: string;
   subject: string;
+  preferredDate?: string;
+  preferredTime?: string;
   message: string;
   date: string;
   status: "New" | "Contacted" | "Resolved";
+  notes?: string;
+  source?: string;
 };
 
 export const seedInquiries: Inquiry[] = [

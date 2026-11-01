@@ -7,7 +7,7 @@ import { useStore } from "@/lib/store";
 import { WhatsAppIcon } from "@/components/site/Icons";
 
 export default function AdminInquiriesPage() {
-  const { inquiries, update } = useStore();
+  const { inquiries, update, updateInquiryStatus, deleteInquiry } = useStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
 
@@ -25,25 +25,36 @@ export default function AdminInquiriesPage() {
       (status === "All" || i.status === status),
   );
 
-  const updateStatus = (id: string, newStatus: Inquiry["status"]) => {
-    update(
-      "inquiries",
-      inqList.map((x) => (x.id === id ? { ...x, status: newStatus } : x)),
-    );
-  };
-
-  const removeInquiry = (id: string) => {
-    if (confirm(`Delete inquiry "${id}"?`)) {
+  const updateStatus = async (id: string, newStatus: Inquiry["status"]) => {
+    if (updateInquiryStatus) {
+      await updateInquiryStatus(id, newStatus);
+    } else {
       update(
         "inquiries",
-        inqList.filter((x) => x.id !== id),
+        inqList.map((x) => (x.id === id ? { ...x, status: newStatus } : x)),
       );
     }
   };
 
-  const saveEditInquiry = (e: React.FormEvent) => {
+  const removeInquiry = async (id: string) => {
+    if (confirm(`Delete inquiry "${id}"?`)) {
+      if (deleteInquiry) {
+        await deleteInquiry(id);
+      } else {
+        update(
+          "inquiries",
+          inqList.filter((x) => x.id !== id),
+        );
+      }
+    }
+  };
+
+  const saveEditInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editInquiry) return;
+    if (updateInquiryStatus) {
+      await updateInquiryStatus(editInquiry.id, editInquiry.status, editInquiry.notes);
+    }
     update(
       "inquiries",
       inqList.map((x) => (x.id === editInquiry.id ? editInquiry : x)),
@@ -181,6 +192,11 @@ export default function AdminInquiriesPage() {
 
                   <td className="px-5 py-4 max-w-md">
                     <span className="font-semibold text-foreground block">{inq.subject}</span>
+                    {inq.preferredDate && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md mt-1">
+                        📅 Planned Visit: {inq.preferredDate} {inq.preferredTime ? `(${inq.preferredTime})` : ""}
+                      </span>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1 leading-relaxed bg-blush/40 p-2.5 rounded-xl border border-border/60 italic line-clamp-2">
                       &ldquo;{inq.message}&rdquo;
                     </p>
@@ -281,6 +297,14 @@ export default function AdminInquiriesPage() {
                 <span className="text-muted-foreground font-semibold">Date Received:</span>
                 <span className="text-foreground">{viewInquiry.date}</span>
               </div>
+              {viewInquiry.preferredDate && (
+                <div className="flex justify-between border-b border-border/50 py-1">
+                  <span className="text-muted-foreground font-semibold">Planned Studio Visit:</span>
+                  <span className="font-bold text-primary">
+                    {viewInquiry.preferredDate} {viewInquiry.preferredTime ? `(${viewInquiry.preferredTime})` : ""}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between py-1">
                 <span className="text-muted-foreground font-semibold">Status:</span>
                 <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] font-bold ${getStatusBadge(viewInquiry.status)}`}>

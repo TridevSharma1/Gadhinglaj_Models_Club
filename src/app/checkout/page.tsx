@@ -332,7 +332,7 @@ export default function CheckoutPage() {
             {/* Left Form: Address & Razorpay Method */}
             <div className="lg:col-span-7 space-y-8">
               {/* Delivery Address */}
-              <div className="rounded-3xl border border-border/80 bg-card p-8 shadow-soft space-y-6">
+              <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-8 shadow-soft space-y-6">
                 <div>
                   <span className="eyebrow">Destination</span>
                   <h2 className="mt-1 font-display text-2xl text-primary font-medium">Shipping Address</h2>
@@ -461,7 +461,7 @@ export default function CheckoutPage() {
 
             {/* Right Summary Card */}
             <div className="lg:col-span-5">
-              <aside className="sticky top-28 space-y-6 rounded-3xl border border-border/80 bg-card p-8 shadow-lift">
+              <aside className="sticky top-28 space-y-6 rounded-3xl border border-border/80 bg-card p-5 sm:p-8 shadow-lift">
                 <div>
                   <span className="eyebrow">Order Items</span>
                   <h3 className="mt-1 font-display text-2xl text-primary font-medium">Summary &amp; Total</h3>

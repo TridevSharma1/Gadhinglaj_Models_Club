@@ -78,7 +78,7 @@ export default function Hero() {
     <section
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="relative h-[82vh] min-h-[580px] max-h-[820px] w-full overflow-hidden bg-stone-950 select-none"
+      className="relative h-[84vh] min-h-[640px] sm:min-h-[580px] max-h-[820px] w-full overflow-hidden bg-stone-950 select-none"
     >
       {/* Background Slides with Cinematic Cross-Fade */}
       {activeSlides.map((b, idx) => {
@@ -103,27 +103,27 @@ export default function Hero() {
       })}
 
       {/* Hero Content Overlay */}
-      <div className="container-lux relative z-10 flex h-full flex-col justify-center pb-20 pt-10">
+      <div className="container-lux relative z-10 flex h-full flex-col justify-center pb-28 sm:pb-24 pt-6 sm:pt-10">
         <div key={currentIdx} className="animate-fade-up max-w-2xl text-white">
-          <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/40 bg-black/50 px-4 py-1.5 backdrop-blur-md shadow-xs">
-            <Sparkles className="h-3.5 w-3.5 text-gold-400" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/40 bg-black/50 px-3.5 py-1 sm:px-4 sm:py-1.5 backdrop-blur-md shadow-xs">
+            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gold-400" />
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] sm:tracking-[0.3em] text-gold-300">
               Priyanka Desai Atelier · 2026
             </span>
           </div>
 
-          <h1 className="mt-5 font-display text-4xl leading-[1.1] text-white sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight">
+          <h1 className="mt-4 sm:mt-5 font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.1] text-white font-normal tracking-tight">
             {current.title}
           </h1>
 
-          <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/85 sm:text-base md:text-lg font-light">
+          <p className="mt-3.5 sm:mt-5 max-w-lg text-xs leading-relaxed text-white/85 sm:text-base md:text-lg font-light">
             {current.subtitle}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             <Link
               href={current.link || "/shop"}
-              className="inline-flex items-center gap-2 rounded-full bg-gold-400 px-8 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-neutral-900 shadow-gold transition-all duration-300 hover:scale-105 hover:bg-gold-300"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gold-400 px-6 sm:px-8 py-3.5 text-xs font-bold uppercase tracking-[0.16em] sm:tracking-[0.2em] text-neutral-900 shadow-gold transition-all duration-300 hover:scale-105 hover:bg-gold-300"
             >
               <span>{current.cta || "Explore Collection"}</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -131,7 +131,7 @@ export default function Hero() {
 
             <Link
               href="/rental"
-              className="rounded-full border border-white/60 bg-white/10 px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-sm transition-all duration-300 hover:bg-white hover:text-primary hover:border-white"
+              className="inline-flex items-center justify-center rounded-full border border-white/60 bg-white/10 px-6 sm:px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] sm:tracking-[0.2em] text-white backdrop-blur-sm transition-all duration-300 hover:bg-white hover:text-primary hover:border-white text-center"
             >
               Explore Dress Rentals
             </Link>
@@ -145,17 +145,17 @@ export default function Hero() {
           <button
             onClick={prevSlide}
             aria-label="Previous Slide"
-            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md border border-white/20 hover:bg-black/70 hover:scale-110 transition-all shadow-lg"
+            className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md border border-white/20 hover:bg-black/70 hover:scale-110 transition-all shadow-lg"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
 
           <button
             onClick={nextSlide}
             aria-label="Next Slide"
-            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md border border-white/20 hover:bg-black/70 hover:scale-110 transition-all shadow-lg"
+            className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md border border-white/20 hover:bg-black/70 hover:scale-110 transition-all shadow-lg"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </>
       )}

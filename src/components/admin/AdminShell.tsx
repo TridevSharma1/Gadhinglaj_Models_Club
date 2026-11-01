@@ -91,6 +91,15 @@ export default function AdminShell({
         </button>
       </div>
 
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity lg:hidden"
+          aria-hidden="true"
+        />
+      )}
+
       {/* Luxury Sidebar */}
       <aside
         className={`${

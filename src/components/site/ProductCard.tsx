@@ -66,31 +66,31 @@ export default function ProductCard({ product }: { product: Product }) {
           <HeartIcon filled={wished} className="h-4 w-4" />
         </button>
 
-        {/* Floating Quick Action Overlay */}
-        <div className="absolute inset-x-3 bottom-3 flex gap-2 opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+        {/* Floating Quick Action Overlay (Touch-friendly on mobile, hover reveal on desktop) */}
+        <div className="absolute inset-x-2.5 bottom-2.5 sm:inset-x-3 sm:bottom-3 flex gap-1.5 sm:gap-2 opacity-100 sm:opacity-0 sm:translate-y-2 transition-all duration-300 sm:group-hover:opacity-100 sm:group-hover:translate-y-0">
           <Link
             href={`/product/${product.id}`}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-white/95 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-primary shadow-soft backdrop-blur-md hover:bg-white"
+            className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5 rounded-full border border-border/80 bg-white/95 py-2 sm:py-2.5 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-primary shadow-soft backdrop-blur-md hover:bg-white active:scale-95 transition-transform"
           >
-            <Eye className="h-3.5 w-3.5" />
-            View
+            <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span>View</span>
           </Link>
 
           {product.type === "readymade" ? (
             <button
               onClick={() => addToCart(product.id, product.sizes[0] ?? "M", 1, activeColor?.name)}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary py-2.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-90"
+              className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5 rounded-full bg-primary py-2 sm:py-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-90 active:scale-95 transition-transform"
             >
-              <ShoppingBag className="h-3.5 w-3.5" />
-              Add
+              <ShoppingBag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span>Add</span>
             </button>
           ) : (
             <Link
               href={`/rental-booking?product=${product.id}&color=${encodeURIComponent(activeColor?.name || "")}`}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-90"
+              className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5 rounded-full bg-primary py-2 sm:py-2.5 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-90 active:scale-95 transition-transform"
             >
-              <Calendar className="h-3.5 w-3.5" />
-              Rent
+              <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span>Rent</span>
             </Link>
           )}
         </div>

@@ -196,33 +196,33 @@ export default function Navbar() {
             : "border-border/60 bg-white/90 backdrop-blur-sm"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-18 sm:h-20 items-center justify-between gap-2 lg:gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex h-16 sm:h-20 items-center justify-between gap-1.5 sm:gap-3 lg:gap-4">
           {/* Brand Logo & Royal Crest */}
           <Link
             href="/"
-            className="group flex items-center gap-2.5 sm:gap-3 shrink-0 focus:outline-none"
+            className="group flex items-center gap-2 sm:gap-3 shrink min-w-0 focus:outline-none"
           >
             {/* Radiant Gold/Wine Monogram Crest (Clearly visible GMC in gold) */}
-            <div className="relative flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3D0A17] via-[#541223] to-[#25050D] font-serif text-sm font-bold tracking-wider text-[#F3E5AB] shadow-md border border-[#E6C280]/60 ring-1 ring-[#D4AF37]/30 transition-transform duration-300 group-hover:scale-105">
+            <div className="relative flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3D0A17] via-[#541223] to-[#25050D] font-serif text-xs sm:text-sm font-bold tracking-wider text-[#F3E5AB] shadow-md border border-[#E6C280]/60 ring-1 ring-[#D4AF37]/30 transition-transform duration-300 group-hover:scale-105">
               GMC
-              <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gradient-to-r from-gold-300 to-amber-500 text-[8px] font-bold text-zinc-950 shadow-xs">
+              <span className="absolute -bottom-1 -right-1 flex h-3 w-3 sm:h-3.5 sm:w-3.5 items-center justify-center rounded-full bg-gradient-to-r from-gold-300 to-amber-500 text-[7px] sm:text-[8px] font-bold text-zinc-950 shadow-xs">
                 ✦
               </span>
             </div>
 
             {/* Brand Title Lockup (Guaranteed No Awkward Wrapping) */}
-            <div className="flex flex-col whitespace-nowrap">
-              <span className="font-display text-base sm:text-lg xl:text-xl font-bold tracking-tight text-primary transition-colors group-hover:text-primary/90 leading-tight">
+            <div className="flex flex-col min-w-0">
+              <span className="font-display text-sm xs:text-base sm:text-lg xl:text-xl font-bold tracking-tight text-primary transition-colors group-hover:text-primary/90 leading-tight truncate">
                 Gadhinglaj Models Club
               </span>
-              <span className="text-[8.5px] uppercase tracking-[0.2em] text-muted-foreground transition-colors group-hover:text-gold-500 leading-tight mt-0.5">
+              <span className="hidden xs:block text-[7.5px] sm:text-[8.5px] uppercase tracking-[0.16em] sm:tracking-[0.2em] text-muted-foreground transition-colors group-hover:text-gold-500 leading-tight mt-0.5 truncate">
                 Haute Atelier &amp; Dress Rental Studio
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav Links (Clean, Balanced & Compact) */}
-          <nav className="hidden lg:flex items-center gap-2.5 xl:gap-4 2xl:gap-5 shrink-0">
+          <nav className="hidden lg:flex items-center gap-2 xl:gap-3.5 2xl:gap-5 shrink-0">
             {navLinks.map((link) => {
               const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
               const hasSubmenu = !!link.submenu;
@@ -236,7 +236,7 @@ export default function Navbar() {
                 >
                   <Link
                     href={link.href}
-                    className={`group inline-flex items-center gap-1 whitespace-nowrap text-[11px] xl:text-xs font-semibold uppercase tracking-[0.1em] transition-all duration-200 ${
+                    className={`group inline-flex items-center gap-1 whitespace-nowrap text-[10.5px] xl:text-[11.5px] 2xl:text-xs font-semibold uppercase tracking-[0.08em] xl:tracking-[0.1em] transition-all duration-200 ${
                       isActive ? "text-primary font-bold" : "text-foreground/75 hover:text-primary"
                     }`}
                   >
@@ -300,23 +300,23 @@ export default function Navbar() {
           </nav>
 
           {/* Right Action Icons & Booking CTA (Always fits cleanly without overflow) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Search Trigger (Icon-Only to prevent horizontal overflow) */}
             <button
               onClick={() => setSearchOpen((prev) => !prev)}
               aria-label="Open Search"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 shadow-xs transition-all hover:border-gold-300 hover:text-primary hover:bg-white"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 shadow-xs transition-all hover:border-gold-300 hover:text-primary hover:bg-white"
             >
-              <SearchIcon className="h-4 w-4 text-primary" />
+              <SearchIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
             </button>
 
             {/* Wishlist Vault Pill */}
             <Link
               href="/wishlist"
               aria-label="Wishlist Vault"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 transition-all hover:border-gold-300 hover:bg-blush hover:text-primary"
+              className="relative flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 transition-all hover:border-gold-300 hover:bg-blush hover:text-primary"
             >
-              <HeartIcon className="h-4 w-4" />
+              <HeartIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               {wishlist.length > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-xs animate-pulse-subtle">
                   {wishlist.length}
@@ -328,9 +328,9 @@ export default function Navbar() {
             <Link
               href="/cart"
               aria-label="Shopping Bag"
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 transition-all hover:border-gold-300 hover:bg-blush hover:text-primary"
+              className="relative flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 transition-all hover:border-gold-300 hover:bg-blush hover:text-primary"
             >
-              <BagIcon className="h-4 w-4" />
+              <BagIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-xs animate-pulse-subtle">
                   {cartCount}
@@ -343,14 +343,14 @@ export default function Navbar() {
               href={currentUser ? "/account" : "/login"}
               aria-label={currentUser ? "My Account" : "Sign In"}
               title={currentUser ? `Signed in as ${currentUser.email}` : "Sign In / Register"}
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 transition-all hover:border-gold-300 hover:bg-blush hover:text-primary"
+              className="relative flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border/80 bg-background/80 text-foreground/80 transition-all hover:border-gold-300 hover:bg-blush hover:text-primary"
             >
               {currentUser ? (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-gold-300 font-serif text-[10px] font-bold">
                   {(currentUser.name || currentUser.email).charAt(0).toUpperCase()}
                 </span>
               ) : (
-                <User className="h-4 w-4" />
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
             </Link>
 
@@ -367,9 +367,9 @@ export default function Navbar() {
             <button
               onClick={() => setMobileOpen((v) => !v)}
               aria-label="Toggle Mobile Drawer"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/80 text-primary transition-colors lg:hidden hover:bg-blush"
+              className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full border border-border/80 text-primary transition-colors lg:hidden hover:bg-blush"
             >
-              {mobileOpen ? <CloseIcon className="h-4.5 w-4.5" /> : <MenuIcon className="h-4.5 w-4.5" />}
+              {mobileOpen ? <CloseIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" /> : <MenuIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />}
             </button>
           </div>
         </div>
@@ -429,7 +429,7 @@ export default function Navbar() {
 
       {/* 4. Luxury Mobile Navigation Slide-Down Drawer */}
       {mobileOpen && (
-        <div className="border-b border-gold-300/40 bg-white shadow-2xl lg:hidden animate-fade-up">
+        <div className="border-b border-gold-300/40 bg-white shadow-2xl lg:hidden animate-fade-up max-h-[85vh] overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
             {/* Mobile Links List */}
             <nav className="divide-y divide-border/60">

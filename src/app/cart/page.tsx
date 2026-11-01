@@ -176,7 +176,7 @@ export default function CartPage() {
 
             {/* Right: Order Summary Card */}
             <div className="lg:col-span-4">
-              <aside className="sticky top-28 space-y-6 rounded-3xl border border-border/80 bg-card p-8 shadow-lift">
+              <aside className="sticky top-28 space-y-6 rounded-3xl border border-border/80 bg-card p-5 sm:p-8 shadow-lift">
                 <div>
                   <span className="eyebrow">Price Breakdown</span>
                   <h3 className="mt-1 font-display text-2xl text-primary font-medium">Order Summary</h3>

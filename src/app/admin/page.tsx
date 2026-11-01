@@ -4,6 +4,7 @@ import Link from "next/link";
 import AdminShell, { card, btn, btnGhost } from "@/components/admin/AdminShell";
 import { inr } from "@/data/catalog";
 import { useStore } from "@/lib/store";
+import { isProductLowStock } from "@/lib/stock-utils";
 import { SparkleIcon } from "@/components/site/Icons";
 
 export default function AdminDashboardPage() {
@@ -12,7 +13,7 @@ export default function AdminDashboardPage() {
   const totalRevenue = orders.reduce((sum, o) => sum + o.amount, 0);
   const rentalRevenue = bookings.reduce((sum, b) => sum + (b.rental || 0), 0);
   const totalValuation = products.reduce((sum, p) => sum + p.stock * p.price, 0);
-  const lowStockCount = products.filter((p) => p.stock <= 3).length;
+  const lowStockCount = products.filter((p) => isProductLowStock(p, 3)).length;
 
   const pendingOrders = orders.filter((o) => o.status === "Pending").length;
   const pendingBookings = bookings.filter((b) => b.status === "Pending").length;
@@ -49,7 +50,7 @@ export default function AdminDashboardPage() {
     {
       label: "Low Stock Garments",
       value: lowStockCount,
-      sub: "Items with ≤ 3 units",
+      sub: "Items or sizes with ≤ 3 units",
       icon: "⚠️",
       trend: lowStockCount > 0 ? "Requires restock" : "Optimal",
       href: "/admin/low-stock",

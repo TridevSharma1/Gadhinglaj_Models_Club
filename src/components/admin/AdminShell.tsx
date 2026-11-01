@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
+import { isProductLowStock } from "@/lib/stock-utils";
 import { CloseIcon, MenuIcon, SparkleIcon } from "@/components/site/Icons";
 
 interface NavItem {
@@ -61,7 +62,7 @@ export default function AdminShell({
 
   const pendingOrders = orders.filter((o) => o.status === "Pending").length;
   const pendingRentals = bookings.filter((b) => b.status === "Pending").length;
-  const lowStockCount = products.filter((p) => p.stock <= 3).length;
+  const lowStockCount = products.filter((p) => isProductLowStock(p, 3)).length;
   const newInquiriesCount = inquiries ? inquiries.filter((i) => i.status === "New").length : 0;
 
   return (

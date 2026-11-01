@@ -9,15 +9,11 @@ import { useStore } from "@/lib/store";
 import { useCartTotals } from "@/hooks/use-cart-totals";
 import {
   ShieldCheck,
-  CreditCard,
-  QrCode,
   Lock,
   CheckCircle2,
   UserCheck,
   AlertCircle,
   Loader2,
-  Building,
-  Smartphone,
 } from "lucide-react";
 
 const field =
@@ -460,74 +456,6 @@ export default function CheckoutPage() {
                     <span>Save this delivery address to my patron profile for future orders</span>
                   </label>
                 )}
-              </div>
-
-              {/* Payment Mode Selection: Dedicated Razorpay Section */}
-              <div className="rounded-3xl border border-border/80 bg-card p-8 shadow-soft space-y-6">
-                <div>
-                  <span className="eyebrow">Payment Gateway</span>
-                  <h2 className="mt-1 font-display text-2xl text-primary font-medium">
-                    Razorpay Secure Checkout
-                  </h2>
-                  <div className="gold-rule mt-2" />
-                </div>
-
-                {/* Primary Razorpay Option Card */}
-                <div className="rounded-2xl border-2 border-primary bg-primary/5 p-6 shadow-soft">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                        <Lock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-base font-bold text-foreground">Razorpay (All-In-One Gateway)</h3>
-                          <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                            Instant Verified
-                          </span>
-                        </div>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          Pay instantly via UPI (Google Pay, PhonePe, Paytm), Debit/Credit Cards, or NetBanking.
-                        </p>
-                      </div>
-                    </div>
-                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                  </div>
-
-                  {/* Payment sub-methods grid */}
-                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 border-t border-border/80">
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-background p-3 text-center shadow-2xs">
-                      <QrCode className="h-5 w-5 text-primary mb-1.5" />
-                      <span className="text-xs font-semibold text-foreground">UPI / QR</span>
-                      <span className="text-[10px] text-muted-foreground">GPay, PhonePe, Paytm</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-background p-3 text-center shadow-2xs">
-                      <CreditCard className="h-5 w-5 text-primary mb-1.5" />
-                      <span className="text-xs font-semibold text-foreground">Cards</span>
-                      <span className="text-[10px] text-muted-foreground">Visa, Master, RuPay</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-background p-3 text-center shadow-2xs">
-                      <Building className="h-5 w-5 text-primary mb-1.5" />
-                      <span className="text-xs font-semibold text-foreground">NetBanking</span>
-                      <span className="text-[10px] text-muted-foreground">All Indian Banks</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-background p-3 text-center shadow-2xs">
-                      <Smartphone className="h-5 w-5 text-primary mb-1.5" />
-                      <span className="text-xs font-semibold text-foreground">Wallets</span>
-                      <span className="text-[10px] text-muted-foreground">Amazon Pay, Mobikwik</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-border/70 bg-secondary/40 p-4 text-xs text-muted-foreground flex items-center gap-3">
-                  <ShieldCheck className="h-5 w-5 text-accent shrink-0" />
-                  <p>
-                    All transactions are processed through Razorpay’s PCI-DSS Level 1 compliant secure payment infrastructure. Card and bank credentials are never stored on our servers.
-                  </p>
-                </div>
               </div>
             </div>
 

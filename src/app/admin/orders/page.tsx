@@ -7,7 +7,7 @@ import { orderStatuses, useStore } from "@/lib/store";
 import { WhatsAppIcon } from "@/components/site/Icons";
 
 export default function AdminOrdersPage() {
-  const { orders, update } = useStore();
+  const { orders, update, deleteOrder, updateOrder } = useStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
 
@@ -18,23 +18,32 @@ export default function AdminOrdersPage() {
     (o) =>
       (o.customer.toLowerCase().includes(q.toLowerCase()) ||
         o.id.toLowerCase().includes(q.toLowerCase()) ||
+        (o.razorpayPaymentId && o.razorpayPaymentId.toLowerCase().includes(q.toLowerCase())) ||
         o.phone.includes(q)) &&
       (status === "All" || o.status === status),
   );
 
-  const removeOrder = (id: string) => {
+  const removeOrder = async (id: string) => {
     if (confirm(`Are you sure you want to delete order "${id}"?`)) {
-      update("orders", orders.filter((o) => o.id !== id));
+      if (deleteOrder) {
+        await deleteOrder(id);
+      } else {
+        update("orders", orders.filter((o) => o.id !== id));
+      }
     }
   };
 
-  const saveEditOrder = (e: React.FormEvent) => {
+  const saveEditOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editOrder) return;
-    update(
-      "orders",
-      orders.map((o) => (o.id === editOrder.id ? editOrder : o)),
-    );
+    if (updateOrder) {
+      await updateOrder(editOrder);
+    } else {
+      update(
+        "orders",
+        orders.map((o) => (o.id === editOrder.id ? editOrder : o)),
+      );
+    }
     setEditOrder(null);
   };
 
@@ -161,9 +170,15 @@ export default function AdminOrdersPage() {
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-xs text-muted-foreground">
+                  <td className="px-5 py-4 text-xs">
                     <span className="font-medium text-foreground block">{o.payment}</span>
-                    <span className="text-[11px] text-muted-foreground">Standard Delivery</span>
+                    {o.razorpayPaymentId ? (
+                      <span className="mt-1 inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-mono font-medium text-emerald-800 border border-emerald-200">
+                        Rzp: {o.razorpayPaymentId}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">Standard Delivery</span>
+                    )}
                   </td>
 
                   <td className="px-5 py-4">
@@ -174,14 +189,17 @@ export default function AdminOrdersPage() {
                   <td className="px-5 py-4">
                     <select
                       value={o.status}
-                      onChange={(e) =>
-                        update(
-                          "orders",
-                          orders.map((x) =>
-                            x.id === o.id ? { ...x, status: e.target.value } : x,
-                          ),
-                        )
-                      }
+                      onChange={(e) => {
+                        const updated = { ...o, status: e.target.value };
+                        if (updateOrder) {
+                          updateOrder(updated);
+                        } else {
+                          update(
+                            "orders",
+                            orders.map((x) => (x.id === o.id ? updated : x)),
+                          );
+                        }
+                      }}
                       className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none focus:border-gold-400"
                     >
                       {orderStatuses.map((s) => (
@@ -253,6 +271,20 @@ export default function AdminOrdersPage() {
                 <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Phone</span>
                 <span className="font-semibold text-foreground">{viewOrder.phone}</span>
               </div>
+              {viewOrder.email && (
+                <div className="col-span-2">
+                  <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Email</span>
+                  <span className="text-foreground font-medium">{viewOrder.email}</span>
+                </div>
+              )}
+              {viewOrder.shippingAddress && (viewOrder.shippingAddress.street || viewOrder.shippingAddress.city) && (
+                <div className="col-span-2">
+                  <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Shipping Destination</span>
+                  <span className="text-foreground">
+                    {[viewOrder.shippingAddress.street, viewOrder.shippingAddress.city, viewOrder.shippingAddress.state, viewOrder.shippingAddress.pincode].filter(Boolean).join(", ")}
+                  </span>
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Date</span>
                 <span className="text-foreground">{viewOrder.date}</span>
@@ -271,6 +303,15 @@ export default function AdminOrdersPage() {
                 <span className="text-muted-foreground block text-[10px] uppercase font-semibold">Total Amount</span>
                 <span className="font-serif text-base font-bold text-primary">{inr(viewOrder.amount)}</span>
               </div>
+              {viewOrder.razorpayPaymentId && (
+                <div className="col-span-2 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">Razorpay Payment Verified</span>
+                  <span className="font-mono text-xs text-emerald-950 font-bold block mt-0.5">ID: {viewOrder.razorpayPaymentId}</span>
+                  {viewOrder.razorpayOrderId && (
+                    <span className="font-mono text-[11px] text-emerald-800 block">Order: {viewOrder.razorpayOrderId}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>

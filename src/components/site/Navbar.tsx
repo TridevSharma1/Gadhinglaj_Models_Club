@@ -45,13 +45,6 @@ const navLinks: NavLink[] = [
   },
   { href: "/readymade", label: "Ready-Made" },
   { href: "/categories", label: "Collections" },
-  {
-    href: "/offers",
-    label: "Offers",
-    badge: "VIP",
-    badgeColor: "bg-rose-100 text-primary border-rose-300",
-    hideOnLg: true, // Only show on xl+ screens to prevent navbar overcrowding
-  },
   { href: "/about", label: "The Atelier" },
   { href: "/contact", label: "Visit" },
 ];
@@ -101,45 +94,100 @@ export default function Navbar() {
     router.push(`/shop?q=${encodeURIComponent(tag)}`);
   };
 
+  const topAdThemeClass = (() => {
+    switch (content.topAdTheme) {
+      case "noir":
+        return "bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-zinc-800";
+      case "gold":
+        return "bg-gradient-to-r from-[#2A2008] via-[#4A380E] to-[#201806] border-gold-400/30";
+      case "emerald":
+        return "bg-gradient-to-r from-[#061A12] via-[#0E3524] to-[#04140D] border-emerald-500/30";
+      case "ruby":
+        return "bg-gradient-to-r from-[#26050B] via-[#4A0A16] to-[#1F0409] border-rose-500/30";
+      default:
+        return "bg-gradient-to-r from-[#1A080E] via-[#2D0F1A] to-[#14060B] border-gold-400/20";
+    }
+  })();
+
+  const topAdPhone = content.topAdPhone || content.phone || "+91 96996 20950";
+  const topAdPrefix = content.topAdPrefix ?? "Gadhinglaj Models Club";
+  const topAdText =
+    content.topAdText ??
+    "Designer Boutique & Luxury Dress Rental Studio by Priyanka Desai";
+  const topAdFeature = content.topAdFeature ?? "Complimentary Fitting";
+  const topAdBtnText = content.topAdBtnText ?? "Stylist Concierge";
+  const topAdWhatsAppMsg =
+    content.topAdWhatsAppMessage ??
+    "Hello Priyanka ji, I would like to inquire about outfit rental and trial fitting at Gadhinglaj Models Club.";
+
   return (
     <header className="sticky top-0 z-50 w-full transition-all duration-300 overflow-x-clip">
-      {/* 1. Haute Couture Top Ticker Ribbon */}
-      <div className="relative border-b border-gold-400/20 bg-gradient-to-r from-[#1A080E] via-[#2D0F1A] to-[#14060B] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-9 items-center justify-between text-[11px] font-medium tracking-wider">
-          {/* Ticker message */}
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="flex h-2 w-2 shrink-0 rounded-full bg-gold-400 shadow-sm animate-pulse" />
-            <p className="truncate text-gold-300 font-light">
-              <span className="font-semibold text-white">Gadhinglaj Models Club</span> · Designer Boutique &amp; Luxury Dress Rental Studio by Priyanka Desai
-            </p>
-          </div>
+      {/* 1. Haute Couture Top Ticker Ribbon / Ad Bar */}
+      {content.topAdEnabled !== false && (
+        <div className={`relative border-b text-white transition-colors duration-500 ${topAdThemeClass}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-9 items-center justify-between text-[11px] font-medium tracking-wider">
+            {/* Ticker message / Ad Headline */}
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="flex h-2 w-2 shrink-0 rounded-full bg-gold-400 shadow-sm animate-pulse" />
+              {content.topAdLink ? (
+                <Link
+                  href={content.topAdLink}
+                  className="truncate text-gold-300 font-light hover:text-white transition-colors"
+                >
+                  {topAdPrefix && (
+                    <span className="font-semibold text-white mr-1.5">{topAdPrefix}</span>
+                  )}
+                  {topAdPrefix && topAdText && <span>· </span>}
+                  <span>{topAdText}</span>
+                </Link>
+              ) : (
+                <p className="truncate text-gold-300 font-light">
+                  {topAdPrefix && (
+                    <span className="font-semibold text-white mr-1.5">{topAdPrefix}</span>
+                  )}
+                  {topAdPrefix && topAdText && <span>· </span>}
+                  <span>{topAdText}</span>
+                </p>
+              )}
+            </div>
 
-          {/* Quick Concierge & Booking Hotline */}
-          <div className="hidden md:flex items-center gap-4 text-[10px] uppercase tracking-widest text-zinc-300 shrink-0">
-            <div className="flex items-center gap-1.5 text-gold-300">
-              <Scissors className="h-3 w-3" />
-              <span>Complimentary Fitting</span>
+            {/* Quick Concierge & Booking Hotline */}
+            <div className="hidden md:flex items-center gap-4 text-[10px] uppercase tracking-widest text-zinc-300 shrink-0">
+              {content.topAdShowFeature !== false && topAdFeature && (
+                <div className="flex items-center gap-1.5 text-gold-300">
+                  <Scissors className="h-3 w-3" />
+                  <span>{topAdFeature}</span>
+                </div>
+              )}
+              {content.topAdShowFeature !== false && topAdFeature && content.topAdShowPhone !== false && (
+                <span className="text-white/20">|</span>
+              )}
+              {content.topAdShowPhone !== false && (
+                <div className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors">
+                  <PhoneIcon className="h-3 w-3 text-gold-400" />
+                  <a href={`tel:${topAdPhone.replace(/[^0-9]/g, "")}`}>{topAdPhone}</a>
+                </div>
+              )}
+              {topAdBtnText && (
+                <>
+                  <span className="text-white/20">|</span>
+                  <a
+                    href={`https://wa.me/91${topAdPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                      topAdWhatsAppMsg,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-0.5 text-emerald-300 hover:bg-emerald-500/30 transition-all font-semibold"
+                  >
+                    <WhatsAppIcon className="h-2.5 w-2.5" />
+                    <span>{topAdBtnText}</span>
+                  </a>
+                </>
+              )}
             </div>
-            <span className="text-white/20">|</span>
-            <div className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors">
-              <PhoneIcon className="h-3 w-3 text-gold-400" />
-              <a href={`tel:${content.phone.replace(/[^0-9]/g, "")}`}>{content.phone}</a>
-            </div>
-            <span className="text-white/20">|</span>
-            <a
-              href={`https://wa.me/91${content.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                "Hello Priyanka ji, I would like to inquire about outfit rental and trial fitting at Gadhinglaj Models Club.",
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-0.5 text-emerald-300 hover:bg-emerald-500/30 transition-all font-semibold"
-            >
-              <WhatsAppIcon className="h-2.5 w-2.5" />
-              <span>Stylist Concierge</span>
-            </a>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 2. Main Luxury Navigation Bar */}
       <div

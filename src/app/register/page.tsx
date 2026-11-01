@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import SiteLayout from "@/components/site/SiteLayout";
 import { useStore } from "@/lib/store";
 import { SparkleIcon, LockIcon } from "@/components/site/Icons";
 import { Mail, CheckCircle2, ArrowRight } from "lucide-react";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/account";
   const { registerCustomer, currentUser } = useStore();
 
   const [email, setEmail] = useState("");
@@ -22,31 +24,29 @@ export default function RegisterPage() {
   // If already logged in, show logged-in prompt
   if (currentUser) {
     return (
-      <SiteLayout>
-        <div className="container-lux py-24 text-center">
-          <div className="mx-auto max-w-md rounded-3xl border border-border/80 bg-white p-8 shadow-soft">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-            <h2 className="mt-4 font-serif text-2xl text-primary font-medium">Already Signed In</h2>
-            <p className="mt-2 text-xs text-muted-foreground">
-              You are currently signed in as <span className="font-semibold text-foreground">{currentUser.email}</span>.
-            </p>
-            <div className="mt-6 flex flex-col gap-2.5">
-              <Link
-                href="/account"
-                className="rounded-full bg-primary py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-95"
-              >
-                Go to My Account
-              </Link>
-              <Link
-                href="/shop"
-                className="rounded-full border border-border py-2.5 text-xs font-medium text-foreground hover:bg-muted"
-              >
-                Explore Catalog
-              </Link>
-            </div>
+      <div className="container-lux py-24 text-center">
+        <div className="mx-auto max-w-md rounded-3xl border border-border/80 bg-white p-8 shadow-soft">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
+          <h2 className="mt-4 font-serif text-2xl text-primary font-medium">Already Signed In</h2>
+          <p className="mt-2 text-xs text-muted-foreground">
+            You are currently signed in as <span className="font-semibold text-foreground">{currentUser.email}</span>.
+          </p>
+          <div className="mt-6 flex flex-col gap-2.5">
+            <Link
+              href={redirectUrl}
+              className="rounded-full bg-primary py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-95"
+            >
+              {redirectUrl === "/checkout" ? "Proceed to Checkout" : "Go to My Account"}
+            </Link>
+            <Link
+              href="/shop"
+              className="rounded-full border border-border py-2.5 text-xs font-medium text-foreground hover:bg-muted"
+            >
+              Explore Catalog
+            </Link>
           </div>
         </div>
-      </SiteLayout>
+      </div>
     );
   }
 
@@ -80,7 +80,7 @@ export default function RegisterPage() {
       if (result.success) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/account");
+          router.push(redirectUrl);
         }, 1200);
       } else {
         setError(result.error || "Registration failed. Please try again.");
@@ -93,36 +93,44 @@ export default function RegisterPage() {
   };
 
   return (
-    <SiteLayout>
-      <div className="relative min-h-[80vh] flex items-center justify-center py-16 px-4 bg-gradient-to-b from-secondary/30 via-background to-secondary/20">
-        
-        {/* Glow backdrop */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/3 left-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-400/10 blur-3xl" />
+    <div className="relative min-h-[80vh] flex items-center justify-center py-16 px-4 bg-gradient-to-b from-secondary/30 via-background to-secondary/20">
+      {/* Glow backdrop */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/3 left-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-400/10 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-md rounded-3xl border border-border/80 bg-white p-7 sm:p-10 shadow-lift animate-fade-up">
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-[#4A0E17] to-primary font-serif text-lg font-bold text-gold-300 shadow-md">
+            GMC
+          </div>
+          <p className="mt-4 flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gold-600">
+            <SparkleIcon className="h-3 w-3" />
+            Gadhinglaj Models Club
+          </p>
+          <h1 className="mt-1 font-serif text-2xl sm:text-3xl font-medium text-primary">
+            Create Your Account
+          </h1>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Register to save favorite looks, book rental fittings &amp; track orders.
+          </p>
         </div>
 
-        <div className="relative w-full max-w-md rounded-3xl border border-border/80 bg-white p-7 sm:p-10 shadow-lift animate-fade-up">
-          
-          {/* Header */}
-          <div className="text-center">
-            <div className="mx-auto flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-[#4A0E17] to-primary font-serif text-lg font-bold text-gold-300 shadow-md">
-              GMC
-            </div>
-            <p className="mt-4 flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gold-600">
-              <SparkleIcon className="h-3 w-3" />
-              Gadhinglaj Models Club
-            </p>
-            <h1 className="mt-1 font-serif text-2xl sm:text-3xl font-medium text-primary">
-              Create Your Account
-            </h1>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Register to save favorite looks, book rental fittings &amp; track orders.
+        {/* Success Banner */}
+        {success ? (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center animate-fade-in">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 mb-2" />
+            <h3 className="font-serif text-lg font-medium text-emerald-950">
+              Welcome to the Atelier!
+            </h3>
+            <p className="mt-1 text-xs text-emerald-700">
+              Your patron account has been created. Redirecting...
             </p>
           </div>
-
-          {/* Form */}
+        ) : (
+          /* Form */
           <form onSubmit={handleRegister} className="mt-7 space-y-4">
-            
             {/* 1. Email Field */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
@@ -144,7 +152,7 @@ export default function RegisterPage() {
             {/* 2. Password Field */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                Password
+                Create Password
               </label>
               <div className="relative">
                 <input
@@ -170,7 +178,7 @@ export default function RegisterPage() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter your password"
+                  placeholder="Re-enter password"
                   className="w-full rounded-xl border border-border/80 bg-background/50 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
                 />
                 <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -184,35 +192,40 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Success Banner */}
-            {success && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-fade-in">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>Account created successfully! Taking you to your atelier dashboard…</span>
-              </div>
-            )}
-
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || success}
+              disabled={loading}
               className="w-full mt-2 rounded-xl bg-primary py-3 text-xs font-semibold uppercase tracking-widest text-primary-foreground shadow-lift transition-transform hover:-translate-y-0.5 hover:opacity-95 disabled:opacity-50"
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {loading ? "Creating Account..." : "Join GMC Atelier"}
             </button>
           </form>
+        )}
 
-          {/* Footer Navigation */}
-          <div className="mt-6 border-t border-border/60 pt-4 text-center">
-            <p className="text-xs text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-primary hover:underline">
-                Sign in here
-              </Link>
-            </p>
-          </div>
+        {/* Footer Navigation */}
+        <div className="mt-6 border-t border-border/60 pt-4 text-center space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Already have an account?{" "}
+            <Link
+              href={redirectUrl !== "/account" ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
+              className="font-semibold text-primary hover:underline"
+            >
+              Sign In here
+            </Link>
+          </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <SiteLayout>
+      <Suspense fallback={<div className="container-lux py-24 text-center text-xs text-muted-foreground">Loading registration...</div>}>
+        <RegisterForm />
+      </Suspense>
     </SiteLayout>
   );
 }

@@ -24,6 +24,7 @@ import {
   Palette,
   ArrowRight,
   X,
+  ChevronLeft,
   ChevronRight,
   ZoomIn,
   Eye,
@@ -79,8 +80,38 @@ export default function ProductDetailsPage() {
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const activeColor: ProductColorVariant | undefined = availableColors[selectedColorIdx] || availableColors[0];
 
-  // Active display image from selected color variant or fallback to product image
-  const displayImage = activeColor?.image || product?.image || "";
+  // Active multiple images for the selected color variant (or product fallback)
+  const currentImages: string[] = useMemo(() => {
+    if (!product) return [];
+    if (activeColor?.images && activeColor.images.length > 0) {
+      return activeColor.images;
+    }
+    if (activeColor?.image) {
+      return [activeColor.image];
+    }
+    if (product.images && product.images.length > 0) {
+      return product.images;
+    }
+    if (product.image) {
+      return [product.image];
+    }
+    return [];
+  }, [activeColor, product]);
+
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  // When selected color changes, reset active image index to 0
+  useEffect(() => {
+    setActiveImageIdx(0);
+  }, [selectedColorIdx]);
+
+  // Active display image from selected color variant images or fallback to product image
+  const displayImage =
+    currentImages[activeImageIdx] ||
+    currentImages[0] ||
+    activeColor?.image ||
+    product?.image ||
+    "";
 
   // Available sizes according to the selected color
   const availableSizesForActiveColor = useMemo(() => {
@@ -234,8 +265,43 @@ export default function ProductDetailsPage() {
               <img
                 src={displayImage}
                 alt={`${product.name} - ${activeColor?.name || ""}`}
-                className={`aspect-[3/4] w-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${positions[view]?.class || "object-top"}`}
+                className={`aspect-[3/4] w-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
+                  currentImages.length <= 1 ? positions[view]?.class || "object-top" : "object-cover"
+                }`}
               />
+
+              {/* Next / Previous arrows on main image if multiple images */}
+              {currentImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImageIdx((i) => (i > 0 ? i - 1 : currentImages.length - 1));
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-md text-foreground shadow-lift hover:bg-white hover:scale-105 transition-all z-20 border border-border/60"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImageIdx((i) => (i < currentImages.length - 1 ? i + 1 : 0));
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-md text-foreground shadow-lift hover:bg-white hover:scale-105 transition-all z-20 border border-border/60"
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+
+                  {/* Photo Counter Pill */}
+                  <div className="absolute right-4 bottom-4 z-10 rounded-full bg-black/70 backdrop-blur-md px-3 py-1 text-[11px] font-semibold text-white/95 border border-white/20 shadow-xs">
+                    Photo {activeImageIdx + 1} of {currentImages.length}
+                  </div>
+                </>
+              )}
 
               {/* Floating Top Badges */}
               <div className="absolute left-4 top-4 flex flex-col gap-2 z-10">
@@ -278,33 +344,73 @@ export default function ProductDetailsPage() {
               {/* Bottom Subtle Overlay */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-transparent to-transparent p-4 flex items-center justify-between text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-[11px] font-light">Priyanka Desai Haute Couture Atelier</span>
-                <span className="text-[10px] uppercase tracking-wider text-gold-300">Click to view full-scale</span>
+                <span className="text-[10px] uppercase tracking-wider text-gold-300">Click zoom icon to view full-scale</span>
               </div>
             </div>
 
-            {/* View Angle Thumbnail Selectors */}
-            <div className="flex gap-3">
-              {positions.map((pos, idx) => (
-                <button
-                  key={pos.label}
-                  onClick={() => setView(idx)}
-                  className={`group relative flex-1 overflow-hidden rounded-2xl border-2 transition-all p-1 bg-white ${
-                    view === idx ? "border-primary ring-2 ring-primary/20 shadow-xs" : "border-border/80 hover:border-gold-400"
-                  }`}
-                >
-                  <div className="aspect-[4/3] w-full overflow-hidden rounded-xl">
-                    <img
-                      src={displayImage}
-                      alt={pos.label}
-                      className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${pos.class}`}
-                    />
-                  </div>
-                  <span className="mt-1.5 block text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary">
-                    {pos.label}
+            {/* Multiple Images Interactive Gallery Thumbnail Bar */}
+            {currentImages.length > 1 ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                  <span className="font-semibold uppercase tracking-wider text-[11px] text-foreground flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-gold-500" />
+                    <span>
+                      {activeColor?.name ? `Photos of ${activeColor.name}` : "Garment Photos"} ({currentImages.length}):
+                    </span>
                   </span>
-                </button>
-              ))}
-            </div>
+                  <span className="text-[11px] text-muted-foreground">Click thumbnail to view</span>
+                </div>
+                <div className="flex gap-2.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                  {currentImages.map((imgUrl, idx) => (
+                    <button
+                      key={imgUrl + idx}
+                      type="button"
+                      onClick={() => setActiveImageIdx(idx)}
+                      className={`group relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all p-0.5 bg-white ${
+                        activeImageIdx === idx
+                          ? "border-[#E5252A] shadow-md ring-2 ring-[#E5252A]/25 scale-102"
+                          : "border-border/80 hover:border-gold-400 opacity-75 hover:opacity-100"
+                      }`}
+                    >
+                      <div className="h-full w-full overflow-hidden rounded-xl">
+                        <img
+                          src={imgUrl}
+                          alt={`Garment photo ${idx + 1}`}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                      {activeImageIdx === idx && (
+                        <span className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-[#E5252A] ring-2 ring-white" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Fallback to View Angle Selectors if only 1 image */
+              <div className="flex gap-3">
+                {positions.map((pos, idx) => (
+                  <button
+                    key={pos.label}
+                    onClick={() => setView(idx)}
+                    className={`group relative flex-1 overflow-hidden rounded-2xl border-2 transition-all p-1 bg-white ${
+                      view === idx ? "border-primary ring-2 ring-primary/20 shadow-xs" : "border-border/80 hover:border-gold-400"
+                    }`}
+                  >
+                    <div className="aspect-[4/3] w-full overflow-hidden rounded-xl">
+                      <img
+                        src={displayImage}
+                        alt={pos.label}
+                        className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${pos.class}`}
+                      />
+                    </div>
+                    <span className="mt-1.5 block text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary">
+                      {pos.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Multi-Colour Preview Gallery Strip if garment has multiple colors */}
             {availableColors.length > 1 && (
@@ -992,10 +1098,11 @@ export default function ProductDetailsPage() {
       )}
 
       {/* -------------------------------------------------------------
-          FULLSCREEN LIGHTBOX MODAL
+          FULLSCREEN LIGHTBOX MODAL (With Multi-Image Navigation)
           ------------------------------------------------------------- */}
       {lightboxOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md animate-fade-in">
+          {/* Close Lightbox */}
           <button
             onClick={() => setLightboxOpen(false)}
             aria-label="Close Lightbox"
@@ -1003,15 +1110,69 @@ export default function ProductDetailsPage() {
           >
             ✕
           </button>
-          <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-3xl">
+
+          {/* Previous / Next buttons inside Lightbox */}
+          {currentImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIdx((i) => (i > 0 ? i - 1 : currentImages.length - 1));
+                }}
+                className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors z-50"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIdx((i) => (i < currentImages.length - 1 ? i + 1 : 0));
+                }}
+                className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors z-50"
+                aria-label="Next image"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          <div className="relative max-h-[92vh] max-w-4xl overflow-hidden rounded-3xl flex flex-col items-center">
             <img
               src={displayImage}
               alt={product.name}
-              className="max-h-[85vh] w-auto object-contain mx-auto rounded-2xl"
+              className="max-h-[75vh] w-auto object-contain mx-auto rounded-2xl shadow-2xl"
             />
-            <div className="text-center text-white text-xs mt-3 font-light">
+            <div className="text-center text-white text-xs mt-3 font-light flex items-center gap-2">
               <span>{product.name} — {activeColor?.name || product.color}</span>
+              {currentImages.length > 1 && (
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold">
+                  Photo {activeImageIdx + 1} of {currentImages.length}
+                </span>
+              )}
             </div>
+
+            {/* Thumbnail Navigation Row in Lightbox */}
+            {currentImages.length > 1 && (
+              <div className="flex items-center gap-2 mt-3 overflow-x-auto max-w-md py-1 px-2">
+                {currentImages.map((img, i) => (
+                  <button
+                    key={img + i}
+                    type="button"
+                    onClick={() => setActiveImageIdx(i)}
+                    className={`h-12 w-12 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
+                      i === activeImageIdx
+                        ? "border-gold-400 ring-2 ring-gold-400/40 scale-105"
+                        : "border-white/20 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <img src={img} alt="Thumb" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

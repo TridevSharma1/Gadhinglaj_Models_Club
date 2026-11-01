@@ -10,6 +10,7 @@ export interface IProductColorVariant {
   name: string;
   stock: number;
   image?: string;
+  images?: string[];
   hasSizes?: boolean;
   sizes?: string[];
   sizeStocks?: IProductSizeStock[];
@@ -50,6 +51,7 @@ export interface IProduct extends Document {
   active: boolean;
   available: boolean;
   image: string;
+  images?: string[];
   description: string;
   createdAt: Date;
   updatedAt: Date;
@@ -93,6 +95,7 @@ const ProductSchema = new Schema<IProduct>(
         name: { type: String },
         stock: { type: Number, default: 0 },
         image: { type: String, default: "" },
+        images: { type: [String], default: [] },
         hasSizes: { type: Boolean, default: false },
         sizes: { type: [String], default: [] },
         sizeStocks: [
@@ -106,6 +109,7 @@ const ProductSchema = new Schema<IProduct>(
     active: { type: Boolean, default: true },
     available: { type: Boolean, default: true },
     image: { type: String, default: "" },
+    images: { type: [String], default: [] },
     description: { type: String, default: "" },
   },
   { timestamps: true },

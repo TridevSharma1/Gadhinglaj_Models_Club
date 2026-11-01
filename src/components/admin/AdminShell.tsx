@@ -26,6 +26,8 @@ const nav: NavItem[] = [
   { to: "/admin/reviews", label: "Testimonials", icon: "⭐" },
   { to: "/admin/inquiries", label: "Inquiry", icon: "📩", badgeKey: "inquiries" },
   { to: "/admin/banners", label: "Hero Showcase", icon: "🖼️" },
+  { to: "/admin/headers", label: "Header Image", icon: "🌄" },
+  { to: "/admin/top-bar", label: "Top Header Ad", icon: "📢" },
   { to: "/admin/settings", label: "Website Setting", icon: "⚙️" },
 ];
 

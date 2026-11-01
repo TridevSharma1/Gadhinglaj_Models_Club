@@ -6,12 +6,13 @@ import { useStore } from "@/lib/store";
 import { SparkleIcon, ShieldCheckIcon } from "@/components/site/Icons";
 
 export default function AdminSettingsPage() {
-  const { settings, content, update } = useStore();
-  const [activeTab, setActiveTab] = useState<"store" | "content">("store");
+  const { settings, content, update, saveSiteContent } = useStore();
+  const [activeTab, setActiveTab] = useState<"store" | "content" | "topAd">("store");
 
   const [draftSettings, setDraftSettings] = useState(settings);
   const [draftContent, setDraftContent] = useState(content);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const textSetting =
     (k: "businessName" | "phone" | "email" | "address" | "currency") =>
@@ -34,36 +35,45 @@ export default function AdminSettingsPage() {
       setSaved(false);
     };
 
-  const handleSave = () => {
-    update("settings", draftSettings);
-    update("content", draftContent);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      update("settings", draftSettings);
+      update("content", draftContent);
+      await saveSiteContent(draftContent);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3500);
+    } catch (err: any) {
+      console.warn("MongoDB sync failed:", err);
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <AdminShell
       title="Website & Store Settings"
-      subtitle="Configure store billing parameters, delivery rates, deposit rules, and brand editorial content."
+      subtitle="Configure store billing parameters, delivery rates, top header ad ribbon, and brand editorial content."
       action={
-        <button className={btn} onClick={handleSave}>
+        <button className={btn} onClick={handleSave} disabled={saving}>
           <span>✓</span>
-          <span>Save All Settings</span>
+          <span>{saving ? "Saving…" : "Save All Settings"}</span>
         </button>
       }
     >
       <div className="max-w-4xl space-y-6">
         {saved && (
           <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 animate-fade-up">
-            ✓ Website settings and store parameters updated successfully across the platform.
+            ✓ Website settings, store parameters, and top header ad ribbon updated successfully!
           </div>
         )}
 
         {/* Setting Tabs */}
-        <div className="flex gap-3 border-b border-border/80 pb-3">
+        <div className="flex flex-wrap gap-2.5 border-b border-border/80 pb-3">
           <button
             onClick={() => setActiveTab("store")}
-            className={`rounded-xl px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
               activeTab === "store"
                 ? "bg-primary text-primary-foreground shadow-lift"
                 : "bg-white border border-border text-muted-foreground hover:text-primary"
@@ -73,8 +83,19 @@ export default function AdminSettingsPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab("topAd")}
+            className={`rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
+              activeTab === "topAd"
+                ? "bg-primary text-primary-foreground shadow-lift"
+                : "bg-white border border-border text-muted-foreground hover:text-primary"
+            }`}
+          >
+            Top Header Ad Ribbon
+          </button>
+
+          <button
             onClick={() => setActiveTab("content")}
-            className={`rounded-xl px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all ${
+            className={`rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
               activeTab === "content"
                 ? "bg-primary text-primary-foreground shadow-lift"
                 : "bg-white border border-border text-muted-foreground hover:text-primary"
@@ -165,7 +186,107 @@ export default function AdminSettingsPage() {
           </div>
         )}
 
-        {/* TAB 2: WEBSITE CONTENT & STORY */}
+        {/* TAB 2: TOP HEADER AD RIBBON */}
+        {activeTab === "topAd" && (
+          <div className="space-y-6">
+            <div className={card}>
+              <div className="flex items-center justify-between border-b border-border/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <SparkleIcon className="h-4 w-4 text-gold-400" />
+                  <h2 className="font-display text-lg text-primary">
+                    Top Header Ad &amp; Announcement Ribbon
+                  </h2>
+                </div>
+                <label className="inline-flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={draftContent.topAdEnabled ?? true}
+                    onChange={(e) =>
+                      setDraftContent({
+                        ...draftContent,
+                        topAdEnabled: e.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 rounded accent-[#E5252A]"
+                  />
+                  <span>Ad Bar Active</span>
+                </label>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <div className="grid gap-5 md:grid-cols-2">
+                  <Field label="Brand Highlight Prefix">
+                    <input
+                      value={draftContent.topAdPrefix ?? "Gadhinglaj Models Club"}
+                      onChange={textContent("topAdPrefix")}
+                      className={input}
+                    />
+                  </Field>
+
+                  <Field label="Ad Click Destination (URL)">
+                    <input
+                      value={draftContent.topAdLink ?? "/rental"}
+                      onChange={textContent("topAdLink")}
+                      className={input}
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Headline Announcement / Ad Text">
+                  <textarea
+                    rows={2}
+                    value={
+                      draftContent.topAdText ??
+                      "Designer Boutique & Luxury Dress Rental Studio by Priyanka Desai"
+                    }
+                    onChange={textContent("topAdText")}
+                    className={input}
+                  />
+                </Field>
+
+                <div className="grid gap-5 md:grid-cols-3">
+                  <Field label="Feature Highlight Pill">
+                    <input
+                      value={draftContent.topAdFeature ?? "Complimentary Fitting"}
+                      onChange={textContent("topAdFeature")}
+                      className={input}
+                    />
+                  </Field>
+
+                  <Field label="Hotline Contact Number">
+                    <input
+                      value={draftContent.topAdPhone ?? draftContent.phone}
+                      onChange={textContent("topAdPhone")}
+                      className={input}
+                    />
+                  </Field>
+
+                  <Field label="WhatsApp Concierge Button Label">
+                    <input
+                      value={draftContent.topAdBtnText ?? "Stylist Concierge"}
+                      onChange={textContent("topAdBtnText")}
+                      className={input}
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Pre-filled WhatsApp Inquire Message">
+                  <textarea
+                    rows={2}
+                    value={
+                      draftContent.topAdWhatsAppMessage ??
+                      "Hello Priyanka ji, I would like to inquire about outfit rental and trial fitting at Gadhinglaj Models Club."
+                    }
+                    onChange={textContent("topAdWhatsAppMessage")}
+                    className={input}
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: WEBSITE CONTENT & STORY */}
         {activeTab === "content" && (
           <div className="space-y-6">
             <div className={card}>

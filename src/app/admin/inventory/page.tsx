@@ -184,8 +184,16 @@ export default function AdminInventoryPage() {
 
       const newColorStock = updatedSizeStocks.reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
 
+      const newSizesList = Array.from(
+        new Set(
+          updatedSizeStocks.map((s) => s.size).concat(col.sizes || [])
+        )
+      );
+
       return {
         ...col,
+        hasSizes: true,
+        sizes: newSizesList,
         sizeStocks: updatedSizeStocks,
         stock: newColorStock,
       };
@@ -243,7 +251,15 @@ export default function AdminInventoryPage() {
   const saveColorStockChanges = async (p: Product) => {
     const updatedVariants = getProductVariants(p);
     const newTotalStock = updatedVariants.reduce((sum, c) => sum + (Number(c.stock) || 0), 0);
-    const allSizes = Array.from(new Set(updatedVariants.flatMap((c) => c.sizes || [])));
+    const allSizes = Array.from(
+      new Set(
+        updatedVariants.flatMap((c) =>
+          c.sizeStocks && c.sizeStocks.length > 0
+            ? c.sizeStocks.map((s) => s.size)
+            : c.sizes || []
+        )
+      )
+    );
 
     const updatedProduct: Product = {
       ...p,

@@ -12,6 +12,7 @@ import {
 import {
   adminCredentials,
   banners as seedBanners,
+  defaultPageHeaders,
   bookingStatuses,
   categories as seedCategories,
   customers as seedCustomers,
@@ -26,6 +27,7 @@ import {
   settings as seedSettings,
   siteContent as seedContent,
   type Banner,
+  type PageHeader,
   type Booking,
   type Category,
   type SubCategory,
@@ -68,6 +70,7 @@ type State = {
   subcategories: SubCategory[];
   inquiries: Inquiry[];
   banners: Banner[];
+  pageHeaders: PageHeader[];
   reviews: Review[];
   offers: Offer[];
   orders: Order[];
@@ -87,6 +90,7 @@ const seed: State = {
   subcategories: seedSubCategories,
   inquiries: seedInquiries,
   banners: seedBanners,
+  pageHeaders: defaultPageHeaders,
   reviews: seedReviews,
   offers: seedOffers,
   orders: seedOrders,
@@ -110,7 +114,9 @@ type Ctx = State & {
   clearCart: () => void;
   toggleWishlist: (productId: number) => void;
   inWishlist: (productId: number) => boolean;
-  placeOrder: (order: Order) => void;
+  placeOrder: (order: Order) => Promise<void> | void;
+  deleteOrder: (id: string) => Promise<void> | void;
+  updateOrder: (order: Order) => Promise<void> | void;
   addBooking: (booking: Booking) => void;
   addInquiry: (inquiry: Inquiry) => void;
   login: (email: string, password: string) => Promise<boolean> | boolean;
@@ -126,6 +132,10 @@ type Ctx = State & {
   deleteProduct: (id: number) => Promise<boolean>;
   saveBanner: (banner: Partial<Banner>) => Promise<Banner>;
   deleteBanner: (id: number) => Promise<boolean>;
+  savePageHeader: (header: Partial<PageHeader>) => Promise<PageHeader>;
+  deletePageHeader: (pageKey: string) => Promise<boolean>;
+  getPageHeader: (pageKeyOrRoute: string) => string;
+  saveSiteContent: (content: Partial<Content>) => Promise<Content>;
   uploadImage: (fileOrBase64: File | string, folder?: string) => Promise<string>;
   refetchCatalog: () => Promise<void>;
   registerCustomer: (email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; error?: string }>;
@@ -159,6 +169,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           categories: parsed.categories || [],
           subcategories: parsed.subcategories || [],
           inquiries: parsed.inquiries || [],
+          banners: parsed.banners || seedBanners,
+          pageHeaders: parsed.pageHeaders || defaultPageHeaders,
           currentUser: parsed.currentUser || null,
           admin: parsed.currentUser?.role === "admin" || parsed.admin || false,
         });
@@ -172,12 +184,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // 2. Fetch live data from MongoDB Atlas backend
   const refetchCatalog = useCallback(async () => {
     try {
-      const [catRes, subRes, prodRes, bookRes, banRes] = await Promise.all([
+      const [catRes, subRes, prodRes, bookRes, banRes, headRes, contRes, ordRes] = await Promise.all([
         fetch("/api/categories").then((r) => r.json()).catch(() => ({ categories: null })),
         fetch("/api/subcategories").then((r) => r.json()).catch(() => ({ subcategories: null })),
         fetch("/api/products").then((r) => r.json()).catch(() => ({ products: null })),
         fetch("/api/bookings").then((r) => r.json()).catch(() => ({ bookings: null })),
         fetch("/api/banners").then((r) => r.json()).catch(() => ({ banners: null })),
+        fetch("/api/page-headers").then((r) => r.json()).catch(() => ({ headers: null })),
+        fetch("/api/site-content").then((r) => r.json()).catch(() => ({ content: null })),
+        fetch("/api/orders").then((r) => r.json()).catch(() => ({ orders: null })),
       ]);
 
       setState((s) => ({
@@ -187,6 +202,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         products: Array.isArray(prodRes?.products) ? prodRes.products : s.products,
         bookings: Array.isArray(bookRes?.bookings) && bookRes.bookings.length > 0 ? bookRes.bookings : s.bookings,
         banners: Array.isArray(banRes?.banners) && banRes.banners.length > 0 ? banRes.banners : s.banners,
+        pageHeaders: Array.isArray(headRes?.headers) && headRes.headers.length > 0 ? headRes.headers : s.pageHeaders,
+        content: contRes?.content ? { ...s.content, ...contRes.content } : s.content,
+        orders: Array.isArray(ordRes?.orders) && ordRes.orders.length > 0 ? ordRes.orders : s.orders,
       }));
     } catch (err) {
       console.warn("Could not sync with MongoDB backend, using local state:", err);
@@ -489,6 +507,98 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, []);
 
+  const savePageHeader = useCallback(async (header: Partial<PageHeader>): Promise<PageHeader> => {
+    const res = await fetch("/api/page-headers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(header),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Failed to save page header banner to MongoDB");
+    }
+
+    const saved = data.header as PageHeader;
+    setState((s) => {
+      const exists = s.pageHeaders.some((h) => h.pageKey === saved.pageKey);
+      return {
+        ...s,
+        pageHeaders: exists
+          ? s.pageHeaders.map((h) => (h.pageKey === saved.pageKey ? saved : h))
+          : [...s.pageHeaders, saved],
+      };
+    });
+    return saved;
+  }, []);
+
+  const deletePageHeader = useCallback(async (pageKey: string): Promise<boolean> => {
+    const res = await fetch(`/api/page-headers?pageKey=${encodeURIComponent(pageKey)}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Failed to reset page header banner");
+    }
+    const def = defaultPageHeaders.find((d) => d.pageKey === pageKey);
+    setState((s) => ({
+      ...s,
+      pageHeaders: s.pageHeaders.map((h) =>
+        h.pageKey === pageKey ? (def ? def : { ...h, imageUrl: "/assets/hero1.jpg" }) : h,
+      ),
+    }));
+    return true;
+  }, []);
+
+  const getPageHeader = useCallback(
+    (pageKeyOrRoute: string): string => {
+      if (!pageKeyOrRoute) return "/assets/hero1.jpg";
+      const cleaned = pageKeyOrRoute.replace(/^\//, "").toLowerCase().split("/")[0] || "default";
+
+      // Match by pageKey or route
+      const match = state.pageHeaders.find(
+        (h) =>
+          h.active &&
+          (h.pageKey.toLowerCase() === cleaned ||
+            h.route.toLowerCase() === `/${cleaned}` ||
+            h.route.toLowerCase() === pageKeyOrRoute.toLowerCase()),
+      );
+
+      if (match?.imageUrl) return match.imageUrl;
+
+      // Fallback to default curated headers
+      const defMatch = defaultPageHeaders.find(
+        (h) =>
+          h.pageKey.toLowerCase() === cleaned ||
+          h.route.toLowerCase() === `/${cleaned}` ||
+          h.route.toLowerCase() === pageKeyOrRoute.toLowerCase(),
+      );
+      if (defMatch?.imageUrl) return defMatch.imageUrl;
+
+      // Fallback to default header or hero1
+      const def = state.pageHeaders.find((h) => h.pageKey === "default" && h.active);
+      return def?.imageUrl || "/assets/hero1.jpg";
+    },
+    [state.pageHeaders],
+  );
+
+  const saveSiteContent = useCallback(
+    async (newContent: Partial<Content>): Promise<Content> => {
+      const res = await fetch("/api/site-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newContent),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to save site content to MongoDB");
+      }
+      const saved = { ...state.content, ...data.content };
+      setState((s) => ({ ...s, content: saved }));
+      return saved;
+    },
+    [state.content],
+  );
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
@@ -502,6 +612,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteProduct,
       saveBanner,
       deleteBanner,
+      savePageHeader,
+      deletePageHeader,
+      getPageHeader,
+      saveSiteContent,
       uploadImage,
       refetchCatalog,
       registerCustomer,
@@ -551,7 +665,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             : [...s.wishlist, productId],
         })),
       inWishlist: (productId) => state.wishlist.includes(productId),
-      placeOrder: (order) => setState((s) => ({ ...s, orders: [order, ...s.orders], cart: [] })),
+      placeOrder: async (order) => {
+        setState((s) => ({
+          ...s,
+          orders: [order, ...s.orders.filter((o) => o.id !== order.id)],
+          cart: [],
+        }));
+        try {
+          await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(order),
+          });
+        } catch (e) {
+          console.warn("Failed to persist order to MongoDB:", e);
+        }
+      },
+      deleteOrder: async (id) => {
+        setState((s) => ({ ...s, orders: s.orders.filter((o) => o.id !== id) }));
+        try {
+          await fetch(`/api/orders?id=${id}`, { method: "DELETE" });
+        } catch (e) {
+          console.warn("Failed to delete order from MongoDB:", e);
+        }
+      },
+      updateOrder: async (order) => {
+        setState((s) => ({
+          ...s,
+          orders: s.orders.map((o) => (o.id === order.id ? order : o)),
+        }));
+        try {
+          await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(order),
+          });
+        } catch (e) {
+          console.warn("Failed to update order in MongoDB:", e);
+        }
+      },
       addBooking: async (booking) => {
         setState((s) => ({ ...s, bookings: [booking, ...s.bookings] }));
         try {
@@ -601,6 +753,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteProduct,
       saveBanner,
       deleteBanner,
+      savePageHeader,
+      deletePageHeader,
+      getPageHeader,
+      saveSiteContent,
       uploadImage,
       refetchCatalog,
       registerCustomer,

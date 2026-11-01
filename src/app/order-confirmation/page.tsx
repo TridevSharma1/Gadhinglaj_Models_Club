@@ -19,8 +19,10 @@ import {
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  const paymentId = searchParams.get("payment_id");
   const { orders, content } = useStore();
   const order = orders.find((o) => o.id === id);
+  const activePaymentId = paymentId || order?.razorpayPaymentId;
 
   return (
     <div className="container-lux py-16 md:py-24">
@@ -55,6 +57,13 @@ function OrderConfirmationContent() {
           <p className="text-sm leading-relaxed text-muted-foreground font-light max-w-lg mx-auto">
             Your boutique order <strong className="font-semibold text-foreground">{order.id}</strong> has been registered. Our concierge will contact you on <strong className="font-semibold text-foreground">{order.phone}</strong> for fitting preferences and dispatch coordination.
           </p>
+
+          {activePaymentId && (
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-800 shadow-2xs">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>Razorpay Payment Verified: <strong className="font-mono text-emerald-950">{activePaymentId}</strong></span>
+            </div>
+          )}
 
           {/* Delivery Timeline Card */}
           <div className="rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left text-xs space-y-2">

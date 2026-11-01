@@ -50,6 +50,7 @@ export type ProductColorVariant = {
   name: string;
   stock: number;
   image?: string;
+  images?: string[];
   hasSizes?: boolean;
   sizes?: string[];
   sizeStocks?: ProductSizeStock[];
@@ -90,6 +91,7 @@ export type Product = {
   active: boolean;
   available: boolean;
   image: string;
+  images?: string[];
   description: string;
 };
 
@@ -159,6 +161,36 @@ export type Banner = {
   active: boolean;
 };
 
+export type PageHeader = {
+  id?: number;
+  pageKey: string;
+  pageName: string;
+  route: string;
+  imageUrl: string;
+  subtitle?: string;
+  active: boolean;
+};
+
+export const defaultPageHeaders: PageHeader[] = [
+  { pageKey: "shop", pageName: "Shop All Outfits", route: "/shop", imageUrl: "/assets/hero1.jpg", active: true },
+  { pageKey: "rental", pageName: "Dress Rental Studio", route: "/rental", imageUrl: "/assets/hero3.jpg", active: true },
+  { pageKey: "readymade", pageName: "Ready-Made Collection", route: "/readymade", imageUrl: "/assets/hero2.jpg", active: true },
+  { pageKey: "categories", pageName: "Curated Categories", route: "/categories", imageUrl: "/assets/cat1.jpg", active: true },
+  { pageKey: "rental-booking", pageName: "Custom Rental Reservation", route: "/rental-booking", imageUrl: "/assets/cat2.jpg", active: true },
+  { pageKey: "offers", pageName: "Vouchers & Offers", route: "/offers", imageUrl: "/assets/offer.jpg", active: true },
+  { pageKey: "about", pageName: "Our Atelier Story", route: "/about", imageUrl: "/assets/about.jpg", active: true },
+  { pageKey: "contact", pageName: "Contact & Studio", route: "/contact", imageUrl: "/assets/cat3.jpg", active: true },
+  { pageKey: "reviews", pageName: "Customer Testimonials", route: "/reviews", imageUrl: "/assets/cat4.jpg", active: true },
+  { pageKey: "faq", pageName: "Frequently Asked Questions", route: "/faq", imageUrl: "/assets/cat5.jpg", active: true },
+  { pageKey: "terms", pageName: "Terms & Rental Policies", route: "/terms", imageUrl: "/assets/cat6.jpg", active: true },
+  { pageKey: "privacy", pageName: "Privacy Policy", route: "/privacy", imageUrl: "/assets/cat7.jpg", active: true },
+  { pageKey: "cart", pageName: "Shopping Bag", route: "/cart", imageUrl: "/assets/p1.jpg", active: true },
+  { pageKey: "wishlist", pageName: "Wishlist Wardrobe", route: "/wishlist", imageUrl: "/assets/p2.jpg", active: true },
+  { pageKey: "account", pageName: "Patron Account", route: "/account", imageUrl: "/assets/p3.jpg", active: true },
+  { pageKey: "checkout", pageName: "Checkout Desk", route: "/checkout", imageUrl: "/assets/p4.jpg", active: true },
+  { pageKey: "default", pageName: "Global Default Banner", route: "/*", imageUrl: "/assets/hero1.jpg", active: true },
+];
+
 export const banners: Banner[] = [
   { id: 1, title: "Wear the Moment. Own the Look.", subtitle: "Premium designer outfits for your most memorable occasions.", cta: "Explore Collection", link: "/shop", image: hero1, active: true },
   { id: 2, title: "Luxury Looks, Made to Impress", subtitle: "Discover premium ethnic wear and designer fashion.", cta: "Shop Now", link: "/readymade", image: hero2, active: true },
@@ -203,13 +235,38 @@ export const offers: Offer[] = [
 
 export type Order = {
   id: string;
+  userId?: string;
   customer: string;
   phone: string;
+  email?: string;
   date: string;
-  items: { name: string; qty: number; size: string; price: number }[];
+  items: {
+    productId?: number;
+    name: string;
+    qty: number;
+    size: string;
+    color?: string;
+    price: number;
+    image?: string;
+  }[];
   amount: number;
+  subtotal?: number;
+  discount?: number;
+  delivery?: number;
+  tax?: number;
   payment: string;
+  paymentStatus?: "Pending" | "Paid" | "Failed";
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  };
   status: string;
+  notes?: string;
 };
 
 export const orderStatuses = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
@@ -266,6 +323,19 @@ export const siteContent = {
     "Gadhinglaj Models Club is a women-owned premium boutique offering designer outfits, heavy ethnic gowns, trendy crop tops and a curated rental wardrobe. Managed personally by Priyanka Desai (Gilbile), every visit is a styling session — from choosing fabrics that flatter you to fitting an outfit that photographs beautifully.",
   footerText:
     "A premium fashion boutique and designer dress rental studio in Gadhinglaj, Maharashtra — styling weddings, celebrations and photoshoots since day one.",
+  // Top Header Ad & Announcement Ribbon
+  topAdEnabled: true,
+  topAdPrefix: "Gadhinglaj Models Club",
+  topAdText: "Designer Boutique & Luxury Dress Rental Studio by Priyanka Desai",
+  topAdLink: "/rental",
+  topAdFeature: "Complimentary Fitting",
+  topAdShowFeature: true,
+  topAdPhone: "+91 96996 20950",
+  topAdShowPhone: true,
+  topAdBtnText: "Stylist Concierge",
+  topAdWhatsAppMessage:
+    "Hello Priyanka ji, I would like to inquire about outfit rental and trial fitting at Gadhinglaj Models Club.",
+  topAdTheme: "burgundy", // burgundy, noir, gold, emerald, ruby
 };
 
 export const settings = {

@@ -6,7 +6,7 @@ import AdminShell, { btn, btnGhost, card, input } from "@/components/admin/Admin
 import { inr, type Product, type ProductColorVariant, type ProductSizeStock } from "@/data/catalog";
 import { useStore } from "@/lib/store";
 import { SparkleIcon } from "@/components/site/Icons";
-import { ArrowRight, Upload, X } from "lucide-react";
+import { ArrowRight, Upload, X, Star, Plus, Trash2, Image as ImageIcon } from "lucide-react";
 
 const blank = (id: number, defaultCategory: string, defaultSubcategory?: string): Product => ({
   id,
@@ -65,6 +65,7 @@ export default function AdminProductsPage() {
   const [subCat, setSubCat] = useState("All");
   const [draft, setDraft] = useState<Product | null>(null);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [viewImageIdx, setViewImageIdx] = useState(0);
 
   // Available subcategories for the selected Category filter
   const availableSubcategoriesForFilter = useMemo(() => {
@@ -91,6 +92,112 @@ export default function AdminProductsPage() {
     }
     return ["XS", "S", "M", "L", "XL", "XXL", "Free Size"];
   }, [subcategories, draft?.subcategory, draft?.category]);
+
+  const handleUploadMultipleImages = async (colorIdx: number, files: FileList | null) => {
+    if (!files || files.length === 0 || !draft) return;
+    try {
+      setUploadingIdx(colorIdx);
+      const fileList = Array.from(files);
+      const uploadedUrls: string[] = [];
+
+      for (const file of fileList) {
+        const url = await uploadImage(file, "gmc_products");
+        uploadedUrls.push(url);
+      }
+
+      const updatedColors = [...(draft.colors || [])];
+      const targetCol = { ...updatedColors[colorIdx] };
+      const existing = targetCol.images && targetCol.images.length > 0
+        ? [...targetCol.images]
+        : targetCol.image
+        ? [targetCol.image]
+        : [];
+
+      const merged = Array.from(new Set([...existing, ...uploadedUrls]));
+      targetCol.images = merged;
+      targetCol.image = targetCol.image || merged[0] || "";
+
+      updatedColors[colorIdx] = targetCol;
+
+      const allProductImages = Array.from(
+        new Set(
+          updatedColors.flatMap((c) =>
+            Array.isArray(c.images) && c.images.length > 0
+              ? c.images
+              : c.image
+              ? [c.image]
+              : []
+          )
+        )
+      );
+
+      setDraft({
+        ...draft,
+        colors: updatedColors,
+        images: allProductImages,
+        image: draft.image || targetCol.image || allProductImages[0] || "",
+      });
+    } catch (err: any) {
+      alert("Failed to upload images to Cloudinary: " + err.message);
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
+
+  const handleRemoveColorImage = (colorIdx: number, imgToRemove: string) => {
+    if (!draft) return;
+    const updatedColors = [...(draft.colors || [])];
+    const targetCol = { ...updatedColors[colorIdx] };
+    const currentImgs = targetCol.images && targetCol.images.length > 0
+      ? targetCol.images
+      : targetCol.image
+      ? [targetCol.image]
+      : [];
+
+    const filtered = currentImgs.filter((img) => img !== imgToRemove);
+    targetCol.images = filtered;
+    if (targetCol.image === imgToRemove) {
+      targetCol.image = filtered[0] || "";
+    }
+    updatedColors[colorIdx] = targetCol;
+
+    const allProductImages = Array.from(
+      new Set(
+        updatedColors.flatMap((c) =>
+          Array.isArray(c.images) && c.images.length > 0
+            ? c.images
+            : c.image
+            ? [c.image]
+            : []
+        )
+      )
+    );
+
+    setDraft({
+      ...draft,
+      colors: updatedColors,
+      images: allProductImages,
+      image: draft.image === imgToRemove ? allProductImages[0] || "" : draft.image,
+    });
+  };
+
+  const handleSetPrimaryColorImage = (colorIdx: number, imgUrl: string) => {
+    if (!draft) return;
+    const updatedColors = [...(draft.colors || [])];
+    const targetCol = { ...updatedColors[colorIdx] };
+    targetCol.image = imgUrl;
+
+    const rest = (targetCol.images || []).filter((img) => img !== imgUrl);
+    targetCol.images = [imgUrl, ...rest];
+
+    updatedColors[colorIdx] = targetCol;
+
+    setDraft({
+      ...draft,
+      colors: updatedColors,
+      image: colorIdx === 0 ? imgUrl : draft.image,
+    });
+  };
 
   const handleToggleHasSizes = (colorIdx: number, hasSizes: boolean) => {
     if (!draft) return;
@@ -1182,55 +1289,111 @@ export default function AdminProductsPage() {
                         )}
                       </div>
 
-                      {/* Upload Image Button */}
-                      <div className="mt-3">
-                        <label className="block text-xs font-medium text-foreground mb-1.5">
-                          Upload Image
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <label className="inline-flex items-center gap-2 rounded-xl bg-muted/60 hover:bg-muted px-4 py-2 text-xs font-medium text-foreground cursor-pointer border border-border/80 transition-colors">
-                            <Upload className="h-3.5 w-3.5" />
-                            <span>{uploadingIdx === idx ? "Uploading to Cloudinary..." : "Upload image"}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              disabled={uploadingIdx === idx}
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                try {
-                                  setUploadingIdx(idx);
-                                  const cdnUrl = await uploadImage(file, "gmc_products");
-                                  const updated = [...(draft.colors || [])];
-                                  updated[idx] = { ...updated[idx], image: cdnUrl };
-                                  setDraft({
-                                    ...draft,
-                                    colors: updated,
-                                    image: draft.image || cdnUrl,
-                                  });
-                                } catch (err: any) {
-                                  alert("Failed to upload image to Cloudinary: " + err.message);
-                                } finally {
-                                  setUploadingIdx(null);
-                                }
-                              }}
-                            />
-                          </label>
+                      {/* Upload Multiple Images Gallery */}
+                      <div className="mt-4 pt-3 border-t border-border/60">
+                        {(() => {
+                          const colImgs =
+                            col.images && col.images.length > 0
+                              ? col.images
+                              : col.image
+                              ? [col.image]
+                              : [];
 
-                          {col.image && (
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={col.image}
-                                alt={col.name || "Preview"}
-                                className="h-10 w-10 rounded-lg object-cover border border-border shadow-2xs"
-                              />
-                              <span className="text-[11px] text-emerald-600 font-medium">
-                                Image ready
-                              </span>
+                          return (
+                            <div className="space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-xs font-semibold text-foreground">
+                                  Color Images Gallery
+                                </label>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {colImgs.length} photo{colImgs.length === 1 ? "" : "s"} uploaded
+                                </span>
+                              </div>
+
+                              {/* Uploaded Gallery Thumbnails */}
+                              {colImgs.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2.5 p-2.5 rounded-2xl bg-muted/20 border border-border/60">
+                                  {colImgs.map((imgUrl, imgIdx) => {
+                                    const isPrimary =
+                                      imgUrl === col.image || (!col.image && imgIdx === 0);
+
+                                    return (
+                                      <div
+                                        key={imgUrl + imgIdx}
+                                        className={`group relative h-20 w-20 rounded-xl overflow-hidden border-2 transition-all ${
+                                          isPrimary
+                                            ? "border-[#E5252A] shadow-md ring-2 ring-[#E5252A]/20"
+                                            : "border-border/80 hover:border-gold-400 bg-white"
+                                        }`}
+                                      >
+                                        <img
+                                          src={imgUrl}
+                                          alt={`Garment ${col.name} photo ${imgIdx + 1}`}
+                                          className="h-full w-full object-cover"
+                                        />
+
+                                        {/* Primary Cover Badge or Button */}
+                                        {isPrimary ? (
+                                          <span className="absolute top-1 left-1 rounded-md bg-[#E5252A] text-white px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider shadow-xs">
+                                            Cover
+                                          </span>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleSetPrimaryColorImage(idx, imgUrl)}
+                                            className="absolute top-1 left-1 rounded-md bg-black/75 text-white/95 hover:text-white px-1.5 py-0.5 text-[8px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Click to set as primary cover image"
+                                          >
+                                            Set Cover
+                                          </button>
+                                        )}
+
+                                        {/* Remove Button */}
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveColorImage(idx, imgUrl)}
+                                          className="absolute top-1 right-1 h-5 w-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-700 shadow-xs"
+                                          title="Remove this photo"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Multi-Image File Input Button */}
+                              <div className="flex flex-wrap items-center gap-2.5">
+                                <label className="inline-flex items-center gap-2 rounded-xl bg-muted/60 hover:bg-muted px-4 py-2 text-xs font-semibold text-foreground cursor-pointer border border-border/80 transition-colors shadow-2xs">
+                                  <Upload className="h-3.5 w-3.5 text-[#E5252A]" />
+                                  <span>
+                                    {uploadingIdx === idx
+                                      ? "Uploading to Cloudinary..."
+                                      : colImgs.length > 0
+                                      ? "+ Add More Images"
+                                      : "Upload Multiple Images"}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    disabled={uploadingIdx === idx}
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      handleUploadMultipleImages(idx, e.target.files);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+
+                                <span className="text-[11px] text-muted-foreground">
+                                  Select 1 or multiple files (JPG, PNG, WebP)
+                                </span>
+                              </div>
                             </div>
-                          )}
-                        </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
@@ -1244,6 +1407,7 @@ export default function AdminProductsPage() {
                         name: "",
                         stock: 0,
                         image: "",
+                        images: [],
                         hasSizes: false,
                         sizes: availableSizesForCurrentSub,
                         sizeStocks: availableSizesForCurrentSub.map((sz) => ({
@@ -1613,20 +1777,53 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Image & Quick Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-1">
-                {viewProduct.image ? (
-                  <img
-                    src={viewProduct.image}
-                    alt={viewProduct.name}
-                    className="aspect-[3/4] w-full rounded-2xl object-cover border border-border shadow-xs"
-                  />
-                ) : (
-                  <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-muted text-xs text-muted-foreground">
-                    No image
+            {(() => {
+              const allImages = Array.from(
+                new Set([
+                  ...(viewProduct.images || []),
+                  viewProduct.image,
+                  ...((viewProduct.colors || []).flatMap((c) =>
+                    c.images && c.images.length > 0 ? c.images : c.image ? [c.image] : []
+                  )),
+                ].filter(Boolean))
+              );
+              const activeImg = allImages[viewImageIdx] || allImages[0] || viewProduct.image;
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-1 space-y-2">
+                    {activeImg ? (
+                      <img
+                        src={activeImg}
+                        alt={viewProduct.name}
+                        className="aspect-[3/4] w-full rounded-2xl object-cover border border-border shadow-xs"
+                      />
+                    ) : (
+                      <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-muted text-xs text-muted-foreground">
+                        No image
+                      </div>
+                    )}
+
+                    {/* Image Thumbnails Strip if multiple */}
+                    {allImages.length > 1 && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+                        {allImages.map((img, i) => (
+                          <button
+                            key={img + i}
+                            type="button"
+                            onClick={() => setViewImageIdx(i)}
+                            className={`h-11 w-11 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                              i === viewImageIdx
+                                ? "border-primary ring-1 ring-primary"
+                                : "border-border/80 opacity-70 hover:opacity-100"
+                            }`}
+                          >
+                            <img src={img} alt="Thumb" className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
               <div className="sm:col-span-2 space-y-2.5 text-xs">
                 <div className="grid grid-cols-2 gap-2 bg-muted/30 p-3 rounded-xl border border-border/60">
@@ -1688,6 +1885,8 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             </div>
+          );
+        })()}
 
             {viewProduct.description && (
               <div className="pt-2 border-t border-border/60">

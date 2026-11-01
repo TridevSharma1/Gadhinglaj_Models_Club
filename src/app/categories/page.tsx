@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 
 export default function CategoriesPage() {
-  const { categories, subcategories, products } = useStore();
+  const { categories, subcategories, products, getPageHeader } = useStore();
+  const headerBg = getPageHeader("categories");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | "rental" | "readymade">("all");
 
@@ -72,34 +73,47 @@ export default function CategoriesPage() {
   return (
     <SiteLayout>
       {/* Editorial Luxury Page Header */}
-      <div className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-blush/60 via-card to-background py-16 md:py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(#c59b27_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
+      <div className="relative overflow-hidden border-b border-border/80 bg-stone-950 text-white py-16 md:py-24">
+        {headerBg && (
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            <img
+              src={headerBg}
+              alt="Categories Banner"
+              className="h-full w-full object-cover object-center brightness-90 contrast-105 scale-102 transition-transform duration-1000"
+            />
+            {/* Balanced Subtle Vignette for High Image Visibility & Clear Text Legibility */}
+            <div className="absolute inset-0 bg-black/35" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/45" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
+          </div>
+        )}
+
         <div className="container-lux relative z-10 text-center max-w-4xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-gold-300/60 bg-gold-50/80 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary shadow-xs">
-            <Crown className="h-3.5 w-3.5 text-gold-500" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-gold-400/40 bg-black/60 backdrop-blur-md px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-gold-300 shadow-xs">
+            <Crown className="h-3.5 w-3.5 text-gold-400" />
             <span>Gadhinglaj Models Club Atelier</span>
           </div>
 
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-normal text-primary tracking-tight">
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-normal text-white tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]">
             Curated Wardrobes &amp; Collections
           </h1>
 
-          <p className="mx-auto max-w-2xl text-sm sm:text-base text-muted-foreground font-light leading-relaxed">
+          <p className="mx-auto max-w-2xl text-sm sm:text-base text-stone-200 font-light leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
             Discover bespoke bridal couture, designer reception lehengas, regal rental silks, and festive prêt-à-porter hand-finished by Priyanka Desai.
           </p>
 
           {/* Quick Stats Pill */}
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-muted-foreground">
-            <span className="flex items-center gap-1.5 bg-white/80 border border-border px-3 py-1 rounded-full shadow-2xs">
-              <Sparkles className="h-3.5 w-3.5 text-gold-500" />
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-stone-300">
+            <span className="flex items-center gap-1.5 bg-black/50 border border-white/20 backdrop-blur-md px-3.5 py-1 rounded-full shadow-2xs">
+              <Sparkles className="h-3.5 w-3.5 text-gold-400" />
               <span>{activeCategories.length} Haute Couture Themes</span>
             </span>
-            <span className="flex items-center gap-1.5 bg-white/80 border border-border px-3 py-1 rounded-full shadow-2xs">
-              <Layers className="h-3.5 w-3.5 text-primary" />
+            <span className="flex items-center gap-1.5 bg-black/50 border border-white/20 backdrop-blur-md px-3.5 py-1 rounded-full shadow-2xs">
+              <Layers className="h-3.5 w-3.5 text-gold-300" />
               <span>{subcategories.filter((s) => s.active).length} Silhouette Styles</span>
             </span>
-            <span className="flex items-center gap-1.5 bg-white/80 border border-border px-3 py-1 rounded-full shadow-2xs">
-              <Crown className="h-3.5 w-3.5 text-gold-500" />
+            <span className="flex items-center gap-1.5 bg-black/50 border border-white/20 backdrop-blur-md px-3.5 py-1 rounded-full shadow-2xs">
+              <Crown className="h-3.5 w-3.5 text-gold-400" />
               <span>{totalOutfits} Handcrafted Outfits</span>
             </span>
           </div>
@@ -113,7 +127,7 @@ export default function CategoriesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search collections (e.g. Bridal, Saree, Lehengas)..."
-                className="w-full rounded-2xl border border-border/80 bg-white/95 pl-11 pr-4 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-300/30 shadow-xs"
+                className="w-full rounded-2xl border border-white/30 bg-white/95 pl-11 pr-4 py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-300/30 shadow-xs"
               />
               {search && (
                 <button
@@ -125,13 +139,13 @@ export default function CategoriesPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 p-1 rounded-2xl border border-border bg-white shadow-2xs shrink-0 w-full sm:w-auto justify-center">
+            <div className="flex items-center gap-1.5 p-1 rounded-2xl border border-white/20 bg-black/60 backdrop-blur-md shadow-2xs shrink-0 w-full sm:w-auto justify-center">
               <button
                 onClick={() => setFilterType("all")}
                 className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
                   filterType === "all"
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "bg-gold-400 text-neutral-900 shadow-xs font-bold"
+                    : "text-stone-300 hover:text-white"
                 }`}
               >
                 All
@@ -140,8 +154,8 @@ export default function CategoriesPage() {
                 onClick={() => setFilterType("rental")}
                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                   filterType === "rental"
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "bg-gold-400 text-neutral-900 shadow-xs font-bold"
+                    : "text-stone-300 hover:text-white"
                 }`}
               >
                 Rental Studio
@@ -150,8 +164,8 @@ export default function CategoriesPage() {
                 onClick={() => setFilterType("readymade")}
                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                   filterType === "readymade"
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "bg-gold-400 text-neutral-900 shadow-xs font-bold"
+                    : "text-stone-300 hover:text-white"
                 }`}
               >
                 Ready-to-Wear

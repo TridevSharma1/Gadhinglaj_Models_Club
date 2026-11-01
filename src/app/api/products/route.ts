@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       active,
       available,
       image,
+      images,
       description,
     } = body;
 
@@ -91,9 +92,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Default primary image and color from color variants if present
-    if (colors && colors.length > 0) {
-      if (!image) image = colors.find((c: any) => c.image)?.image || "";
-      if (!color) color = colors[0]?.name || "Standard";
+    const colorImages = Array.isArray(colors)
+      ? colors.flatMap((c: any) =>
+          Array.isArray(c.images) && c.images.length > 0
+            ? c.images
+            : c.image
+            ? [c.image]
+            : []
+        )
+      : [];
+
+    const finalImages = Array.isArray(images) && images.length > 0
+      ? images
+      : colorImages;
+
+    if (!image) {
+      image = finalImages[0] || (colors && colors.length > 0 ? colors.find((c: any) => c.image)?.image || "" : "");
+    }
+    if (colors && colors.length > 0 && !color) {
+      color = colors[0]?.name || "Standard";
     }
 
     const product = await ProductModel.findOneAndUpdate(
@@ -133,6 +150,7 @@ export async function POST(req: NextRequest) {
           active: active ?? true,
           available: available ?? true,
           image: image || "",
+          images: finalImages,
           description: description || "",
         },
       },

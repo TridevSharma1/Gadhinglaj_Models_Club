@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import SiteLayout from "@/components/site/SiteLayout";
 import { useStore } from "@/lib/store";
+import { inr } from "@/data/catalog";
 import { SparkleIcon } from "@/components/site/Icons";
 import {
   User,
@@ -22,13 +23,26 @@ import {
   AlertCircle,
   Save,
   Ruler,
+  Package,
+  Truck,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function AccountPage() {
   const router = useRouter();
-  const { currentUser, logoutCustomer, updateUserProfile, cart, wishlist, hydrated } = useStore();
+  const { currentUser, logoutCustomer, updateUserProfile, cart, wishlist, orders, hydrated, getPageHeader } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"profile" | "wardrobe" | "rentals">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "wardrobe" | "rentals">("profile");
+
+  const myOrders = useMemo(() => {
+    if (!currentUser) return [];
+    return orders.filter(
+      (o) =>
+        (o.userId && o.userId === currentUser.id) ||
+        (currentUser.email && o.email?.toLowerCase() === currentUser.email.toLowerCase()) ||
+        (currentUser.phone && o.phone && o.phone.replace(/[^0-9]/g, "") === currentUser.phone.replace(/[^0-9]/g, ""))
+    );
+  }, [orders, currentUser]);
 
   // Form State
   const [name, setName] = useState("");
@@ -126,28 +140,37 @@ export default function AccountPage() {
       <div className="container-lux py-12 sm:py-16">
         
         {/* 1. Profile Header Hero Banner */}
-        <div className="relative overflow-hidden rounded-3xl border border-gold-300/40 bg-gradient-to-r from-card via-blush/30 to-card p-6 sm:p-10 shadow-soft">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+        <div className="relative overflow-hidden rounded-3xl border border-gold-300/40 bg-zinc-950 p-6 sm:p-10 shadow-soft text-white">
+          {getPageHeader("account") && (
+            <img
+              src={getPageHeader("account")}
+              alt="Account Banner"
+              className="absolute inset-0 h-full w-full object-cover object-center brightness-90 contrast-105"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/75" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
               <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-gold-300 font-serif text-3xl font-bold shadow-lift ring-2 ring-gold-300/60">
                 {initial}
               </div>
               <div>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <h1 className="font-serif text-2xl sm:text-3xl font-medium text-primary">
+                  <h1 className="font-serif text-2xl sm:text-3xl font-medium text-white">
                     {name || currentUser.name || "Valued Patron"}
                   </h1>
-                  <span className="rounded-full bg-gold-400/20 text-gold-800 border border-gold-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="rounded-full bg-gold-400/20 text-gold-300 border border-gold-400/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                     {currentUser.role === "admin" ? "Atelier Administrator" : "Couture Club Member"}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-gold-500" />
+                <p className="mt-1 text-xs text-white/75 flex items-center justify-center sm:justify-start gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-gold-400" />
                   <span>{currentUser.email}</span>
                 </p>
                 {phone && (
-                  <p className="mt-0.5 text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
-                    <Phone className="h-3.5 w-3.5 text-gold-500" />
+                  <p className="mt-0.5 text-xs text-white/75 flex items-center justify-center sm:justify-start gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-gold-400" />
                     <span>{phone}</span>
                   </p>
                 )}
@@ -175,9 +198,9 @@ export default function AccountPage() {
           </div>
 
           {/* 2. Profile Completion Progress Bar */}
-          <div className="mt-8 pt-6 border-t border-border/60">
+          <div className="mt-8 pt-6 border-t border-white/10">
             <div className="flex items-center justify-between text-xs mb-2">
-              <span className="font-semibold text-primary flex items-center gap-1.5">
+              <span className="font-semibold text-gold-300 flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-gold-500" />
                 Profile Completion Status
               </span>
@@ -208,7 +231,7 @@ export default function AccountPage() {
         </div>
 
         {/* 3. Account Navigation Tabs */}
-        <div className="mt-8 flex gap-3 border-b border-border/80 pb-3">
+        <div className="mt-8 flex flex-wrap gap-3 border-b border-border/80 pb-3">
           <button
             onClick={() => setActiveTab("profile")}
             className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all ${
@@ -219,6 +242,18 @@ export default function AccountPage() {
           >
             <User className="h-3.5 w-3.5" />
             <span>Complete My Profile</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all ${
+              activeTab === "orders"
+                ? "bg-primary text-primary-foreground shadow-lift"
+                : "bg-white border border-border text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <Package className="h-3.5 w-3.5" />
+            <span>My Orders ({myOrders.length})</span>
           </button>
 
           <button
@@ -448,6 +483,123 @@ export default function AccountPage() {
 
               </form>
             </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB: MY ORDERS & PURCHASES
+            ========================================================================= */}
+        {activeTab === "orders" && (
+          <div className="mt-8 space-y-6">
+            {!myOrders.length ? (
+              <div className="rounded-3xl border border-border/80 bg-white p-12 text-center shadow-soft">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 mb-4">
+                  <Package className="h-7 w-7" />
+                </div>
+                <h3 className="font-serif text-xl font-medium text-foreground">No Orders Found Yet</h3>
+                <p className="mt-1.5 text-xs text-muted-foreground max-w-md mx-auto">
+                  You haven&apos;t placed any boutique orders yet. Browse our designer prêt-à-porter collection and experience instant secure payment with Razorpay.
+                </p>
+                <div className="mt-6">
+                  <Link
+                    href="/shop"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-95"
+                  >
+                    <span>Browse Collection</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myOrders.map((o) => (
+                  <div
+                    key={o.id}
+                    className="rounded-3xl border border-border/80 bg-white p-6 sm:p-8 shadow-soft space-y-5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-4">
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-serif text-xl font-bold text-primary">{o.id}</span>
+                          <span className="rounded-full bg-blue-100 text-blue-800 border border-blue-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                            {o.status}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground font-light">
+                          Placed on {o.date} · {o.payment}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                          Total Amount Paid
+                        </span>
+                        <span className="font-serif text-2xl font-bold text-primary">
+                          {inr(o.amount)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Razorpay transaction badge */}
+                    {o.razorpayPaymentId && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-2 text-xs text-emerald-900">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                          <span>Razorpay Payment Verified: <strong className="font-mono">{o.razorpayPaymentId}</strong></span>
+                        </div>
+                        <span className="rounded-full bg-emerald-200/80 text-emerald-800 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
+                          256-Bit Encrypted
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Items List */}
+                    <div className="divide-y divide-border/60">
+                      {o.items.map((it, idx) => (
+                        <div key={idx} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                          <div className="flex items-center gap-3">
+                            {it.image && (
+                              <img
+                                src={it.image}
+                                alt={it.name}
+                                className="h-12 w-10 rounded-lg object-cover border border-border/60"
+                              />
+                            )}
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{it.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Size: {it.size} {it.color && `· ${it.color}`} · Qty: {it.qty}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs font-semibold text-primary">
+                            {inr(it.price * it.qty)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Shipping destination & Help */}
+                    {o.shippingAddress && (o.shippingAddress.street || o.shippingAddress.city) && (
+                      <div className="pt-3 border-t border-border/60 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-gold-600" />
+                          <span>Delivery Address: {[o.shippingAddress.street, o.shippingAddress.city, o.shippingAddress.state, o.shippingAddress.pincode].filter(Boolean).join(", ")}</span>
+                        </div>
+                        <a
+                          href={`https://wa.me/919699620950?text=Hi%20GMC,%20inquiring%20about%20my%20order%20${o.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary font-semibold hover:underline"
+                        >
+                          Contact Concierge Support →
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

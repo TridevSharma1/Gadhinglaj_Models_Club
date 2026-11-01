@@ -34,7 +34,6 @@ const navLinks: NavLink[] = [
       { label: "All Outfits", href: "/shop", desc: "Browse full ready-to-wear & rental wardrobe" },
       { label: "Ready-Made Boutique", href: "/readymade", desc: "Purchase designer pieces with 48h dispatch" },
       { label: "Dress Rental Studio", href: "/rental", desc: "3-day photoshoot & bridal rental booking" },
-      { label: "Curated Collections", href: "/categories", desc: "Gowns, lehengas, crop tops & more" },
     ],
   },
   {

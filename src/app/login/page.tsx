@@ -6,7 +6,7 @@ import { useState, Suspense } from "react";
 import SiteLayout from "@/components/site/SiteLayout";
 import { useStore } from "@/lib/store";
 import { SparkleIcon, LockIcon } from "@/components/site/Icons";
-import { Mail, CheckCircle2 } from "lucide-react";
+import { Mail, CheckCircle2, Sparkles } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -17,6 +17,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [welcomeMessage, setWelcomeMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   // If already logged in, prompt to view account
@@ -66,7 +67,11 @@ function LoginForm() {
     try {
       const result = await loginCustomer(email.trim(), password);
       if (result.success) {
-        router.push(redirectUrl);
+        const welcomeText = `Welcome back to GMC Atelier! A greeting email has been sent to ${email.trim()}.`;
+        setWelcomeMessage(welcomeText);
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 1200);
       } else {
         setError(result.error || "Invalid email or password.");
       }
@@ -101,6 +106,17 @@ function LoginForm() {
             Access your saved couture outfits, rental appointments &amp; orders.
           </p>
         </div>
+
+        {/* Welcome Success Notice */}
+        {welcomeMessage && (
+          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs font-medium text-emerald-900 shadow-sm animate-fade-in">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+            <div className="flex-1">
+              <span className="font-bold block">Sign In Successful</span>
+              <span className="text-emerald-700 text-[11px]">{welcomeMessage}</span>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleLogin} className="mt-7 space-y-4">

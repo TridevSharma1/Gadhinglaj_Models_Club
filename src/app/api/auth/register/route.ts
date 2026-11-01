@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/mongodb";
 import { UserModel } from "@/models/User";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -86,9 +87,17 @@ export async function POST(req: NextRequest) {
       role: "user",
     });
 
+    // Send welcome email to new patron
+    sendWelcomeEmail({
+      name: newUser.name,
+      email: newUser.email,
+    }).catch((emailErr) => {
+      console.warn("Async welcome email dispatch error:", emailErr);
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Account created successfully!",
+      message: `Welcome to Gadhinglaj Models Club Atelier, ${newUser.name}!`,
       user: {
         id: newUser._id.toString(),
         email: newUser.email,

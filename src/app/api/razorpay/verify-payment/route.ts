@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { connectToDatabase } from "@/lib/mongodb";
 import { OrderModel } from "@/models/Order";
 import { ProductModel } from "@/models/Product";
+import { sendInvoiceEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -75,6 +76,29 @@ export async function POST(req: Request) {
       { $set: orderPayload },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    // Send itemized luxury invoice email to customer asynchronously
+    if (orderPayload.email) {
+      sendInvoiceEmail({
+        id: orderPayload.id,
+        customer: orderPayload.customer,
+        email: orderPayload.email,
+        phone: orderPayload.phone,
+        date: orderPayload.date,
+        items: orderPayload.items,
+        amount: orderPayload.amount,
+        subtotal: orderPayload.subtotal,
+        discount: orderPayload.discount,
+        delivery: orderPayload.delivery,
+        tax: orderPayload.tax,
+        payment: orderPayload.payment,
+        razorpayPaymentId: razorpay_payment_id,
+        razorpayOrderId: razorpay_order_id,
+        shippingAddress: orderPayload.shippingAddress,
+      }).catch((emailErr) => {
+        console.warn("Could not dispatch invoice email:", emailErr);
+      });
+    }
 
     // Optionally decrement product stock if matching product exists
     if (Array.isArray(orderPayload.items)) {

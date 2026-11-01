@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import SiteLayout, { EmptyState } from "@/components/site/SiteLayout";
 import { inr } from "@/data/catalog";
 import { useStore } from "@/lib/store";
@@ -14,6 +14,8 @@ import {
   Truck,
   ShieldCheck,
   Calendar,
+  Mail,
+  Loader2,
 } from "lucide-react";
 
 function OrderConfirmationContent() {
@@ -23,6 +25,32 @@ function OrderConfirmationContent() {
   const { orders, content } = useStore();
   const order = orders.find((o) => o.id === id);
   const activePaymentId = paymentId || order?.razorpayPaymentId;
+
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailNotice, setEmailNotice] = useState("");
+
+  const handleSendEmailInvoice = async () => {
+    if (!order) return;
+    setEmailSending(true);
+    setEmailNotice("");
+    try {
+      const res = await fetch("/api/orders/send-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, order }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailNotice(`Invoice successfully sent to ${order.email || "your registered email"}.`);
+      } else {
+        setEmailNotice(data.error || "Could not dispatch email invoice.");
+      }
+    } catch {
+      setEmailNotice("Failed to dispatch email invoice.");
+    } finally {
+      setEmailSending(false);
+    }
+  };
 
   return (
     <div className="container-lux py-16 md:py-24">
@@ -62,6 +90,34 @@ function OrderConfirmationContent() {
             <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-800 shadow-2xs">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
               <span>Razorpay Payment Verified: <strong className="font-mono text-emerald-950">{activePaymentId}</strong></span>
+            </div>
+          )}
+
+          {/* Email Dispatch Notice */}
+          <div className="rounded-2xl border border-border/80 bg-secondary/40 p-4 text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
+                <Mail className="h-4 w-4" />
+              </div>
+              <div>
+                <span className="font-semibold text-foreground block">Email Invoice Sent</span>
+                <span className="text-[11px] text-muted-foreground">
+                  A digital tax invoice has been dispatched to <strong>{order.email || "your email"}</strong>.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleSendEmailInvoice}
+              disabled={emailSending}
+              className="rounded-full border border-border bg-white px-3.5 py-1.5 text-[11px] font-semibold text-primary hover:bg-muted transition-colors shrink-0 shadow-2xs disabled:opacity-50"
+            >
+              {emailSending ? "Sending..." : "Resend Invoice"}
+            </button>
+          </div>
+
+          {emailNotice && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 animate-fade-in">
+              {emailNotice}
             </div>
           )}
 
@@ -119,6 +175,15 @@ function OrderConfirmationContent() {
             </a>
 
             <button
+              onClick={handleSendEmailInvoice}
+              disabled={emailSending}
+              className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-blush transition-colors"
+            >
+              {emailSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              <span>Email Invoice</span>
+            </button>
+
+            <button
               onClick={() => window.print()}
               className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-blush transition-colors"
             >
@@ -144,7 +209,7 @@ function OrderConfirmationContent() {
 export default function OrderConfirmationPage() {
   return (
     <SiteLayout>
-      <Suspense fallback={<div className="container-lux py-24 text-center">Loading order receipt…</div>}>
+      <Suspense fallback={<div className="container-lux py-24 text-center">Loading confirmation...</div>}>
         <OrderConfirmationContent />
       </Suspense>
     </SiteLayout>

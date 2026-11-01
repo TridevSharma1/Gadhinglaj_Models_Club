@@ -13,6 +13,34 @@ export default function AdminOrdersPage() {
 
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [emailStatus, setEmailStatus] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const handleAdminSendInvoice = async (o: Order) => {
+    if (!o.email) {
+      alert("This order does not have an email address specified.");
+      return;
+    }
+    setSendingEmail(true);
+    setEmailStatus("");
+    try {
+      const res = await fetch("/api/orders/send-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: o.id, order: o }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailStatus(`Invoice dispatched to ${o.email}`);
+      } else {
+        setEmailStatus(data.error || "Failed to send invoice.");
+      }
+    } catch {
+      setEmailStatus("Failed to send invoice email.");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   const list = orders.filter(
     (o) =>
@@ -331,23 +359,44 @@ export default function AdminOrdersPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-border/60">
-              <button
-                onClick={() => {
-                  const o = viewOrder;
-                  setViewOrder(null);
-                  setEditOrder({ ...o });
-                }}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow-lift"
-              >
-                Edit Order
-              </button>
-              <button
-                onClick={() => setViewOrder(null)}
-                className="rounded-xl border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted"
-              >
-                Close
-              </button>
+            {emailStatus && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-800">
+                {emailStatus}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/60">
+              {viewOrder.email ? (
+                <button
+                  type="button"
+                  disabled={sendingEmail}
+                  onClick={() => handleAdminSendInvoice(viewOrder)}
+                  className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                >
+                  {sendingEmail ? "Dispatching..." : "Email Invoice to Client"}
+                </button>
+              ) : (
+                <span className="text-[11px] text-muted-foreground italic">No email on file</span>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const o = viewOrder;
+                    setViewOrder(null);
+                    setEditOrder({ ...o });
+                  }}
+                  className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow-lift"
+                >
+                  Edit Order
+                </button>
+                <button
+                  onClick={() => setViewOrder(null)}
+                  className="rounded-xl border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

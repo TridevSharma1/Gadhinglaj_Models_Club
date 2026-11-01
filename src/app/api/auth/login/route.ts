@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/mongodb";
 import { UserModel } from "@/models/User";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -70,13 +71,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const userName = user.name || normalizedEmail.split("@")[0];
+
+    // Dispatch welcome email asynchronously
+    sendWelcomeEmail({
+      name: userName,
+      email: user.email,
+    }).catch((emailErr) => {
+      console.warn("Async welcome email dispatch error:", emailErr);
+    });
+
     return NextResponse.json({
       success: true,
-      message: "Signed in successfully!",
+      message: `Welcome back, ${userName}! You are signed in to Gadhinglaj Models Club Atelier.`,
       user: {
         id: user._id.toString(),
         email: user.email,
-        name: user.name || normalizedEmail.split("@")[0],
+        name: userName,
         phone: user.phone || "",
         address: user.address || { street: "", city: "Gadhinglaj", state: "Maharashtra", pincode: "" },
         preferredSize: user.preferredSize || "M",

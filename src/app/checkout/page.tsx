@@ -12,14 +12,10 @@ import {
   CreditCard,
   QrCode,
   Lock,
-  ArrowRight,
   CheckCircle2,
   UserCheck,
-  LogIn,
-  UserPlus,
   AlertCircle,
   Loader2,
-  Sparkles,
   Building,
   Smartphone,
 } from "lucide-react";
@@ -29,7 +25,7 @@ const field =
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { currentUser, placeOrder, updateUserProfile, loginCustomer, registerCustomer } = useStore();
+  const { currentUser, placeOrder, updateUserProfile } = useStore();
   const { lines, subtotal, discount, delivery, tax, total } = useCartTotals();
 
   // Address & contact state
@@ -48,14 +44,6 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
-
-  // Inline Auth Modal / Form state for unauthenticated users
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authConfirmPassword, setAuthConfirmPassword] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
 
   // Populate from currentUser if available
   useEffect(() => {
@@ -92,66 +80,10 @@ export default function CheckoutPage() {
     });
   };
 
-  // Inline Login Handler
-  const handleInlineLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    if (!authEmail.trim() || !authPassword) {
-      setAuthError("Please enter your registered email and password.");
-      return;
-    }
-    setAuthLoading(true);
-    try {
-      const res = await loginCustomer(authEmail.trim(), authPassword);
-      if (!res.success) {
-        setAuthError(res.error || "Invalid credentials.");
-      }
-    } catch (err: any) {
-      setAuthError(err.message || "Failed to log in.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // Inline Register Handler
-  const handleInlineRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    if (!authEmail.trim() || !authPassword) {
-      setAuthError("Email and password are required.");
-      return;
-    }
-    if (authPassword.length < 6) {
-      setAuthError("Password must be at least 6 characters.");
-      return;
-    }
-    if (authPassword !== authConfirmPassword) {
-      setAuthError("Passwords do not match.");
-      return;
-    }
-    setAuthLoading(true);
-    try {
-      const res = await registerCustomer(authEmail.trim(), authPassword, authConfirmPassword);
-      if (!res.success) {
-        setAuthError(res.error || "Failed to create account.");
-      }
-    } catch (err: any) {
-      setAuthError(err.message || "Registration failed.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   // Submit Order & Trigger Razorpay
   const handlePlaceOrderWithRazorpay = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorNotice("");
-
-    if (!currentUser) {
-      setErrorNotice("Please sign in or register your patron account to complete your order.");
-      window.scrollTo({ top: 200, behavior: "smooth" });
-      return;
-    }
 
     if (!form.name.trim() || !form.phone.trim() || !form.email.trim() || !form.address.trim()) {
       setErrorNotice("Please complete all shipping address fields.");
@@ -162,8 +94,8 @@ export default function CheckoutPage() {
     setProcessingStatus("Initializing 256-bit secure payment session...");
 
     try {
-      // 1. Sync updated profile address if checked
-      if (saveToProfile) {
+      // 1. Sync updated profile address if checked and user is logged in
+      if (currentUser && saveToProfile) {
         try {
           await updateUserProfile({
             name: form.name.trim(),
@@ -246,7 +178,7 @@ export default function CheckoutPage() {
 
             const orderPayload: Order = {
               id: orderId,
-              userId: currentUser.id,
+              userId: currentUser?.id || "",
               customer: form.name.trim(),
               phone: form.phone.trim(),
               email: form.email.trim(),
@@ -374,157 +306,16 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* 1. Patron Authentication Check Banner */}
-        {!currentUser ? (
-          <div className="mb-10 rounded-3xl border border-gold-300/60 bg-gradient-to-br from-zinc-950 via-zinc-900 to-primary p-7 sm:p-10 text-white shadow-lift animate-fade-up">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/10 pb-6 mb-6">
-              <div className="space-y-1">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-gold-300 border border-gold-400/30">
-                  <Sparkles className="h-3 w-3" />
-                  Patron Sign In Required
-                </span>
-                <h2 className="font-serif text-2xl sm:text-3xl font-medium text-white">
-                  Sign In to Place Your Order
-                </h2>
-                <p className="text-xs text-zinc-300 max-w-xl">
-                  To ensure insured boutique delivery, garment fitting coordination, and lifetime receipt tracking, please sign in or register your couture patron account.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <Link
-                  href="/login?redirect=/checkout"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-5 py-2.5 text-xs font-bold text-zinc-950 shadow-gold hover:bg-gold-300 transition-all"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
-                </Link>
-                <Link
-                  href="/register?redirect=/checkout"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-2.5 text-xs font-semibold text-white hover:bg-white/20 transition-all"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  <span>Register</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Quick Inline Auth Card */}
-            <div className="max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
-              <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
-                <span className="text-xs font-medium text-gold-200">
-                  Quick Access without leaving this page:
-                </span>
-                <div className="flex gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode("login");
-                      setAuthError("");
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold tracking-wider uppercase transition-colors ${
-                      authMode === "login"
-                        ? "bg-gold-400 text-zinc-950"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    Log In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode("register");
-                      setAuthError("");
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold tracking-wider uppercase transition-colors ${
-                      authMode === "register"
-                        ? "bg-gold-400 text-zinc-950"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    Register
-                  </button>
-                </div>
-              </div>
-
-              {authError && (
-                <div className="mb-3 rounded-lg bg-rose-500/20 border border-rose-400/40 p-2 text-xs text-rose-200">
-                  {authError}
-                </div>
-              )}
-
-              {authMode === "login" ? (
-                <form onSubmit={handleInlineLogin} className="space-y-3">
-                  <input
-                    type="email"
-                    required
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="w-full rounded-xl border border-white/20 bg-black/40 px-3.5 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-gold-400"
-                  />
-                  <input
-                    type="password"
-                    required
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="w-full rounded-xl border border-white/20 bg-black/40 px-3.5 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-gold-400"
-                  />
-                  <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full rounded-xl bg-gold-400 py-2.5 text-xs font-bold text-zinc-950 hover:bg-gold-300 transition-all disabled:opacity-50"
-                  >
-                    {authLoading ? "Verifying..." : "Instant Sign In & Continue"}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleInlineRegister} className="space-y-3">
-                  <input
-                    type="email"
-                    required
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="w-full rounded-xl border border-white/20 bg-black/40 px-3.5 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-gold-400"
-                  />
-                  <input
-                    type="password"
-                    required
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="Create password (min 6 chars)"
-                    className="w-full rounded-xl border border-white/20 bg-black/40 px-3.5 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-gold-400"
-                  />
-                  <input
-                    type="password"
-                    required
-                    value={authConfirmPassword}
-                    onChange={(e) => setAuthConfirmPassword(e.target.value)}
-                    placeholder="Confirm password"
-                    className="w-full rounded-xl border border-white/20 bg-black/40 px-3.5 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-gold-400"
-                  />
-                  <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full rounded-xl bg-gold-400 py-2.5 text-xs font-bold text-zinc-950 hover:bg-gold-300 transition-all disabled:opacity-50"
-                  >
-                    {authLoading ? "Creating Account..." : "Create Account & Continue"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 sm:p-5 text-emerald-900 shadow-2xs">
+        {/* Patron Account info banner if logged in */}
+        {currentUser && (
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 sm:p-5 text-emerald-900 shadow-2xs">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-2xs">
                 <UserCheck className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                  Authenticated Patron Account
+                  Signed in as Patron
                 </p>
                 <p className="text-sm font-semibold text-emerald-950">
                   {currentUser.name || "Couture Member"} · <span className="font-normal opacity-90">{currentUser.email}</span>

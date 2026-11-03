@@ -42,11 +42,11 @@ const navLinks: NavLink[] = [
   { href: "/", label: "Home" },
   {
     href: "/shop",
-    label: "Catalog",
+    label: "Shop",
     submenu: [
-      { label: "All Outfits", href: "/shop", desc: "Browse full ready-to-wear & rental wardrobe" },
-      { label: "Ready-Made Boutique", href: "/readymade", desc: "Purchase designer pieces with 48h dispatch" },
-      { label: "Dress Rental Studio", href: "/rental", desc: "3-day photoshoot & bridal rental booking" },
+      { label: "All Outfits", href: "/shop", desc: "View all dresses and outfits" },
+      { label: "Buy Outfits", href: "/readymade", desc: "Ready-made clothes with quick delivery" },
+      { label: "Rent Outfits", href: "/rental", desc: "Rent dresses for weddings & shoots" },
     ],
   },
   {
@@ -56,9 +56,9 @@ const navLinks: NavLink[] = [
     badgeColor: "bg-amber-100 text-amber-900 border-amber-300",
   },
   { href: "/readymade", label: "Ready-Made" },
-  { href: "/categories", label: "Collections" },
-  { href: "/about", label: "The Atelier" },
-  { href: "/contact", label: "Visit" },
+  { href: "/categories", label: "Categories" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 const trendingSearches = [
@@ -125,11 +125,19 @@ export default function Navbar() {
 
   const topAdPhone = content.topAdPhone || content.phone || "+91 96996 20950";
   const topAdPrefix = content.topAdPrefix ?? "Gadhinglaj Models Club";
-  const topAdText =
+  const rawTopAdText =
     content.topAdText ??
-    "Designer Boutique & Luxury Dress Rental Studio by Priyanka Desai";
-  const topAdFeature = content.topAdFeature ?? "Complimentary Fitting";
-  const topAdBtnText = content.topAdBtnText ?? "Stylist Concierge";
+    "Boutique & Dress Rental Studio by Priyanka Desai";
+  const topAdText = rawTopAdText.replace(
+    /Designer Boutique & Luxury Dress Rental Studio/gi,
+    "Boutique & Dress Rental Studio"
+  );
+  const rawTopAdFeature = content.topAdFeature ?? "Free Fitting";
+  const topAdFeature =
+    rawTopAdFeature === "Complimentary Fitting" ? "Free Fitting" : rawTopAdFeature;
+  const rawTopAdBtnText = content.topAdBtnText ?? "Chat with Us";
+  const topAdBtnText =
+    rawTopAdBtnText === "Stylist Concierge" ? "Chat with Us" : rawTopAdBtnText;
   const topAdWhatsAppMsg =
     content.topAdWhatsAppMessage ??
     "Hello Priyanka ji, I would like to inquire about outfit rental and trial fitting at Gadhinglaj Models Club.";
@@ -231,7 +239,7 @@ export default function Navbar() {
                 Gadhinglaj Models Club
               </span>
               <span className="hidden xs:block text-[7.5px] sm:text-[8.5px] uppercase tracking-[0.16em] sm:tracking-[0.2em] text-muted-foreground transition-colors group-hover:text-gold-500 leading-tight mt-0.5 truncate">
-                Haute Atelier &amp; Dress Rental Studio
+                Boutique &amp; Dress Rental Studio
               </span>
             </div>
           </Link>
@@ -400,7 +408,7 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search designer gowns, bridal lehengas, maternity drapes, velvet crop tops…"
+                placeholder="Search gowns, lehengas, crop tops, sarees, dresses…"
                 className="w-full rounded-2xl border-2 border-gold-300/40 bg-background px-5 py-3 pl-12 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition-all focus:border-gold-400 focus:ring-2 focus:ring-gold-300/20 shadow-inner"
               />
               <SearchIcon className="absolute left-4 h-5 w-5 text-gold-400" />
@@ -423,10 +431,10 @@ export default function Navbar() {
               </div>
             </form>
 
-            {/* Trending Curations Chips */}
+            {/* Popular Searches Chips */}
             <div className="mt-3.5 flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Trending Curations:
+                Popular Searches:
               </span>
               {trendingSearches.map((tag) => (
                 <button
@@ -465,7 +473,7 @@ export default function Navbar() {
                     {content.businessName}
                   </h3>
                   <p className="text-[9px] uppercase tracking-widest text-gold-600 font-semibold">
-                    Haute Couture Atelier
+                    Boutique &amp; Rental Studio
                   </p>
                 </div>
               </div>
@@ -479,7 +487,7 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Patron Profile / Membership Status Card */}
+            {/* Profile / Account Status Card */}
             <div className="border-b border-border/70 bg-blush/40 px-5 py-3">
               {currentUser ? (
                 <div className="flex items-center justify-between">
@@ -489,7 +497,7 @@ export default function Navbar() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-primary truncate">
-                        {currentUser.name || "Patron Member"}
+                        {currentUser.name || "Customer"}
                       </p>
                       <p className="text-[10px] text-muted-foreground truncate">
                         {currentUser.email}
@@ -507,7 +515,7 @@ export default function Navbar() {
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold text-primary">Couture Membership</p>
+                    <p className="text-xs font-bold text-primary">My Account</p>
                     <p className="text-[10px] text-muted-foreground">Sign in to save wishlist &amp; orders</p>
                   </div>
                   <Link
@@ -527,7 +535,7 @@ export default function Navbar() {
               <nav className="space-y-1">
                 {navLinks.map((link) => {
                   const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-                  const isCatalog = link.label === "Catalog";
+                  const isCatalog = link.label === "Shop" || link.label === "Catalog";
 
                   if (isCatalog) {
                     return (
@@ -539,7 +547,7 @@ export default function Navbar() {
                         >
                           <span className="flex items-center gap-2.5">
                             <Sparkles className="h-4 w-4 text-gold-500" />
-                            <span>Catalog &amp; Wardrobe</span>
+                            <span>Shop Outfits</span>
                           </span>
                           <ChevronDown
                             className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -584,11 +592,12 @@ export default function Navbar() {
                     >
                       <div className="flex items-center gap-2.5">
                         {link.label === "Home" && <Home className="h-4 w-4" />}
+                        {link.label === "Shop" && <Sparkles className="h-4 w-4" />}
                         {link.label === "Rentals" && <Crown className="h-4 w-4 text-amber-500" />}
                         {link.label === "Ready-Made" && <Scissors className="h-4 w-4" />}
-                        {link.label === "Collections" && <Layers className="h-4 w-4" />}
-                        {link.label === "The Atelier" && <SparkleIcon className="h-4 w-4" />}
-                        {link.label === "Visit" && <MapPin className="h-4 w-4" />}
+                        {link.label === "Categories" && <Layers className="h-4 w-4" />}
+                        {(link.label === "About" || link.label === "The Atelier") && <SparkleIcon className="h-4 w-4" />}
+                        {(link.label === "Contact" || link.label === "Visit") && <MapPin className="h-4 w-4" />}
                         <span>{link.label}</span>
                       </div>
 
@@ -617,7 +626,7 @@ export default function Navbar() {
                   className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground shadow-lift hover:opacity-95 transition-opacity"
                 >
                   <SparkleIcon className="h-3.5 w-3.5 text-gold-300" />
-                  <span>Book 3-Day Rental Trial</span>
+                  <span>Book Rental Fitting</span>
                 </Link>
 
                 <a
@@ -629,7 +638,7 @@ export default function Navbar() {
                   className="flex items-center justify-center gap-2 rounded-full bg-emerald-600 py-3 text-xs font-semibold uppercase tracking-wider text-white shadow-soft hover:bg-emerald-700 transition-colors"
                 >
                   <WhatsAppIcon className="h-4 w-4" />
-                  <span>Direct WhatsApp Concierge</span>
+                  <span>Chat on WhatsApp</span>
                 </a>
               </div>
 
@@ -659,7 +668,7 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="text-primary font-semibold hover:underline"
               >
-                Staff Portal ↗
+                Staff Login ↗
               </Link>
               <span>·</span>
               <Link
@@ -701,7 +710,7 @@ export default function Navbar() {
           }`}
         >
           <Sparkles className="h-4.5 w-4.5" />
-          <span className="text-[10px] tracking-tight">Catalog</span>
+          <span className="text-[10px] tracking-tight">Shop</span>
         </Link>
 
         <Link

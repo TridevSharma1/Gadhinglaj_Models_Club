@@ -198,7 +198,10 @@ export const banners: Banner[] = [
 ];
 
 export type Review = {
-  id: number;
+  id: number | string;
+  productId?: number;
+  productName?: string;
+  productImage?: string;
   name: string;
   initials: string;
   rating: number;
@@ -208,12 +211,78 @@ export type Review = {
 };
 
 export const reviews: Review[] = [
-  { id: 1, name: "Sneha Patil", initials: "SP", rating: 5, text: "Beautiful collection and amazing quality. The gown looked stunning during our photoshoot.", date: "2026-01-12", approved: true },
-  { id: 2, name: "Aishwarya Kulkarni", initials: "AK", rating: 5, text: "Rented a bridal lehenga for my engagement. Perfect fit and Priyanka ma'am styled me personally.", date: "2026-02-03", approved: true },
-  { id: 3, name: "Rutuja Shinde", initials: "RS", rating: 4, text: "Lovely ethnic wear at fair prices. The chikankari set is now my favourite outfit.", date: "2026-02-21", approved: true },
-  { id: 4, name: "Manasi Jadhav", initials: "MJ", rating: 5, text: "The maternity trail gown made my shoot magical. Very comfortable fabric.", date: "2026-03-08", approved: true },
-  { id: 5, name: "Pooja Kamble", initials: "PK", rating: 5, text: "Best boutique in Gadhinglaj. Great collection of crop tops and party dresses.", date: "2026-03-19", approved: true },
-  { id: 6, name: "Shruti Deshpande", initials: "SD", rating: 4, text: "Smooth rental process and the outfit was pressed and packed beautifully.", date: "2026-04-02", approved: false },
+  {
+    id: 1,
+    productId: 1,
+    productName: "Royal Crimson Zardosi Bridal Lehenga",
+    productImage: "https://res.cloudinary.com/tridevsosync/image/upload/v1793623363/gmc_products/p1_wh2unl.jpg",
+    name: "Sneha Patil",
+    initials: "SP",
+    rating: 5,
+    text: "Beautiful collection and amazing quality. The bridal lehenga looked stunning during our wedding ceremony and received countless compliments!",
+    date: "2026-01-12",
+    approved: true,
+  },
+  {
+    id: 2,
+    productId: 2,
+    productName: "Emerald Empress Shimmer Ballgown",
+    productImage: "https://res.cloudinary.com/tridevsosync/image/upload/v1793623368/gmc_products/p2_qe1bqc.jpg",
+    name: "Aishwarya Kulkarni",
+    initials: "AK",
+    rating: 5,
+    text: "Rented this emerald shimmer gown for my engagement. Perfect fit, luxurious fabric, and Priyanka ma'am styled me personally at the studio.",
+    date: "2026-02-03",
+    approved: true,
+  },
+  {
+    id: 3,
+    productId: 5,
+    productName: "Traditional Golden Yeola Paithani Saree",
+    productImage: "https://res.cloudinary.com/tridevsosync/image/upload/v1793623401/gmc_products/p5_wi66lq.jpg",
+    name: "Rutuja Shinde",
+    initials: "RS",
+    rating: 5,
+    text: "Authentic weave, rich pallu zari, and heavenly drape. The Yeola Paithani made the family festive ceremony truly unforgettable.",
+    date: "2026-02-21",
+    approved: true,
+  },
+  {
+    id: 4,
+    productId: 4,
+    productName: "Pastel Rose Blossom Maternity Trail Gown",
+    productImage: "https://res.cloudinary.com/tridevsosync/image/upload/v1793623381/gmc_products/p4_eycaoh.jpg",
+    name: "Manasi Jadhav",
+    initials: "MJ",
+    rating: 5,
+    text: "The maternity trail gown made my outdoor sunrise shoot feel like a fairy tale. Extremely comfortable, breathable, and flowed effortlessly in the breeze.",
+    date: "2026-03-08",
+    approved: true,
+  },
+  {
+    id: 5,
+    productId: 6,
+    productName: "Mirror-Work Lavender Georgette Crop Top & Skirt",
+    productImage: "https://res.cloudinary.com/tridevsosync/image/upload/v1793623404/gmc_products/p6_jvnlhx.jpg",
+    name: "Pooja Kamble",
+    initials: "PK",
+    rating: 5,
+    text: "Best boutique collection in Gadhinglaj! The mirror-work sparkle and lavender flair stood out beautifully for our sangeet night.",
+    date: "2026-03-19",
+    approved: true,
+  },
+  {
+    id: 6,
+    productId: 3,
+    productName: "Sunset Scarlet 10-Meter Flying Trail Gown",
+    productImage: "https://res.cloudinary.com/tridevsosync/image/upload/v1793623373/gmc_products/p3_xiuv4z.jpg",
+    name: "Shruti Deshpande",
+    initials: "SD",
+    rating: 5,
+    text: "Smooth rental booking process and the 10-meter scarlet trail was professionally steamed and ready on arrival. The photos turned out breathtaking!",
+    date: "2026-04-02",
+    approved: false,
+  },
 ];
 
 export type Offer = {

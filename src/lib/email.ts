@@ -70,14 +70,16 @@ export async function sendInvoiceEmail(order: {
       .filter(Boolean)
       .join(", ") || "In-Studio Collection / Address Confirmed via Concierge";
 
+    const invoiceNo = `GMC-INV-${order.id.replace(/\D/g, "") || order.id}`;
+
     const itemsRowsHtml = order.items
       .map(
-        (item) => `
+        (item, idx) => `
         <tr style="border-bottom: 1px solid #f0eae1;">
           <td style="padding: 14px 10px; font-family: 'Georgia', serif; font-size: 14px; color: #1a1a1a;">
             <strong>${item.name}</strong>
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #71717a; margin-top: 3px;">
-              Size: ${item.size}${item.color ? ` &middot; Color: ${item.color}` : ""} &middot; Qty: ${item.qty}
+              Size: ${item.size}${item.color ? ` &middot; Color: ${item.color}` : ""} &middot; Qty: ${item.qty} &middot; HSN: 6204
             </div>
           </td>
           <td style="padding: 14px 10px; text-align: right; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #1a1a1a; font-weight: 600;">
@@ -92,7 +94,7 @@ export async function sendInvoiceEmail(order: {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Your Order Invoice - Gadhinglaj Models Club</title>
+  <title>Your Tax Invoice ${invoiceNo} - Gadhinglaj Models Club</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="margin: 0; padding: 0; background-color: #f7f4ef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #27272a;">
@@ -106,13 +108,16 @@ export async function sendInvoiceEmail(order: {
           <tr>
             <td style="background: linear-gradient(135deg, #4A0E17 0%, #722F37 50%, #2b080d 100%); padding: 40px 30px; text-align: center; color: #ffffff;">
               <div style="display: inline-block; padding: 6px 16px; border-radius: 50px; background: rgba(212, 175, 55, 0.2); border: 1px solid rgba(212, 175, 55, 0.4); font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #f5d77f; margin-bottom: 12px;">
-                Official Boutique Invoice
+                Official Boutique Tax Invoice &middot; ${invoiceNo}
               </div>
               <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 28px; font-weight: 400; letter-spacing: 1px; color: #ffffff;">
-                Gadhinglaj Models Club
+                GADHINGLAJ MODELS CLUB
               </h1>
               <p style="margin: 6px 0 0; font-size: 12px; color: #e4d5b7; font-weight: 300; letter-spacing: 1.5px; text-transform: uppercase;">
-                Designer Boutique &amp; Luxury Rental Studio by Priyanka Desai
+                Haute Couture Atelier &amp; Luxury Dress Rental Studio &middot; by Priyanka Desai
+              </p>
+              <p style="margin: 6px 0 0; font-size: 11px; color: #ffffff; opacity: 0.8;">
+                Tilak Path, Near Shivaji Bank, Main Road, Gadhinglaj, Maharashtra 416502
               </p>
             </td>
           </tr>

@@ -47,10 +47,9 @@ function RentalBookingContent() {
 
   const { products, currentUser, addBooking } = useStore();
 
-  // All active rental outfits, plus fallback to all active products if none are explicitly rental
+  // Strictly active rental outfits only
   const rentalProducts = useMemo(() => {
-    const r = products.filter((p) => p.type === "rental" && p.active);
-    return r.length > 0 ? r : products.filter((p) => p.active);
+    return products.filter((p) => p.type === "rental" && p.active);
   }, [products]);
 
   // Mode: "catalog" (curated studio outfit) or "custom" (custom bespoke design request)

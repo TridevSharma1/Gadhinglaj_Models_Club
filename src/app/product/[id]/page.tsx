@@ -30,6 +30,10 @@ import {
   Eye,
   Crown,
   CheckCircle2,
+  MessageSquarePlus,
+  Quote,
+  Star,
+  AlertCircle,
 } from "lucide-react";
 
 const positions = [
@@ -41,7 +45,7 @@ const positions = [
 export default function ProductDetailsPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { products, addToCart, toggleWishlist, wishlist } = useStore();
+  const { products, addToCart, toggleWishlist, wishlist, reviews, submitReview, currentUser } = useStore();
   const router = useRouter();
 
   const product = products.find((p) => p.id === Number(id) && p.active);
@@ -54,6 +58,61 @@ export default function ProductDetailsPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [addedToast, setAddedToast] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "rental" | "fitting" | "care">("details");
+
+  // Reviews for this specific product (only approved ones visible publicly)
+  const productReviews = useMemo(() => {
+    if (!product) return [];
+    return reviews.filter(
+      (r) => r.approved && (Number(r.productId) === Number(product.id) || r.productName === product.name)
+    );
+  }, [reviews, product]);
+
+  const productAvgRating = useMemo(() => {
+    if (!productReviews.length) return product?.rating || 5;
+    const sum = productReviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+    return Number((sum / productReviews.length).toFixed(1));
+  }, [productReviews, product]);
+
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ name: "", rating: 5, text: "" });
+  const [hoverStar, setHoverStar] = useState(0);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [recentlySubmitted, setRecentlySubmitted] = useState(false);
+
+  useEffect(() => {
+    if (currentUser?.name && !reviewForm.name) {
+      setReviewForm((prev) => ({ ...prev, name: currentUser.name }));
+    }
+  }, [currentUser, reviewForm.name]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!product || !reviewForm.name.trim() || !reviewForm.text.trim()) return;
+
+    setReviewSubmitting(true);
+    try {
+      await submitReview({
+        productId: product.id,
+        productName: product.name,
+        productImage: displayImage || product.image,
+        name: reviewForm.name.trim(),
+        rating: reviewForm.rating,
+        text: reviewForm.text.trim(),
+      });
+      setReviewSubmitted(true);
+      setRecentlySubmitted(true);
+      setTimeout(() => {
+        setShowReviewModal(false);
+        setReviewSubmitted(false);
+        setReviewForm({ name: currentUser?.name || "", rating: 5, text: "" });
+      }, 2500);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   // Normalize available colors from product.colors array or fallback
   const availableColors: ProductColorVariant[] = useMemo(() => {
@@ -163,7 +222,13 @@ export default function ProductDetailsPage() {
   const off = Math.round(((product.mrp - product.price) / product.mrp) * 100);
   const wished = wishlist.includes(product.id);
   const related = products
-    .filter((p) => p.active && p.id !== product.id && p.category === product.category)
+    .filter(
+      (p) =>
+        p.active &&
+        p.id !== product.id &&
+        p.type === product.type &&
+        (p.category === product.category || true),
+    )
     .slice(0, 4);
 
   const handleShare = async () => {
@@ -503,12 +568,15 @@ export default function ProductDetailsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Stars rating={product.rating} />
-                  <span>
-                    {product.rating} ({product.reviews} reviews)
+                <a
+                  href="#product-reviews"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer group/rev"
+                >
+                  <Stars rating={productAvgRating} />
+                  <span className="font-medium group-hover/rev:underline">
+                    {productAvgRating.toFixed(1)} ({productReviews.length} {productReviews.length === 1 ? "review" : "reviews"})
                   </span>
-                </div>
+                </a>
               </div>
 
               <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-normal text-primary tracking-tight">
@@ -895,6 +963,140 @@ export default function ProductDetailsPage() {
         </div>
 
         {/* -------------------------------------------------------------
+            PRODUCT CLIENT REVIEWS & FEEDBACK SECTION
+            ------------------------------------------------------------- */}
+        <section id="product-reviews" className="mt-20 border-t border-border/80 pt-16 scroll-mt-24">
+          {recentlySubmitted && (
+            <div className="mb-8 flex items-start gap-3 rounded-3xl border border-amber-300 bg-amber-50/80 p-5 shadow-soft animate-fade-in">
+              <AlertCircle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <span className="font-bold text-amber-900 block text-sm">Feedback Submitted for Review!</span>
+                <span className="text-amber-800 leading-relaxed font-light mt-0.5 block">
+                  Thank you for reviewing <strong className="font-semibold">{product.name}</strong>. Your feedback has been transmitted to our atelier admin desk and will be published live on this silhouette once approved.
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <SectionHead
+              eyebrow="Client Reflections"
+              title="Patron Reviews & Fitting Feedback"
+              subtitle={`Real fitting experiences and styling feedback for "${product.name}".`}
+            />
+
+            <button
+              onClick={() => setShowReviewModal(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white shadow-lift hover:opacity-90 transition-all self-start md:self-end shrink-0"
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+              <span>Give Feedback to Product</span>
+            </button>
+          </div>
+
+          {/* Rating Snapshot Banner */}
+          <div className="mt-10 grid gap-6 md:grid-cols-3 rounded-3xl border border-border/80 bg-gradient-to-r from-secondary/60 via-card to-secondary/40 p-6 sm:p-8 shadow-soft">
+            <div className="flex items-center gap-4 border-b md:border-b-0 md:border-r border-border/60 pb-6 md:pb-0 md:pr-6">
+              <div className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lift shrink-0">
+                <span className="font-display text-2xl font-bold">{productAvgRating.toFixed(1)}</span>
+                <span className="text-[9px] uppercase tracking-wider text-accent font-medium">/ 5.0</span>
+              </div>
+              <div>
+                <Stars rating={productAvgRating} />
+                <p className="mt-1 text-xs font-semibold text-foreground">
+                  {productReviews.length} Verified {productReviews.length === 1 ? "Review" : "Reviews"}
+                </p>
+                <p className="text-[11px] text-muted-foreground font-light">
+                  From patrons who wore or rented this piece
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center border-b md:border-b-0 md:border-r border-border/60 pb-6 md:pb-0 md:pr-6 text-xs space-y-1.5">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="font-medium text-foreground">Silhouette &amp; Fit</span>
+                <span className="text-emerald-700 font-semibold">True to Size (98%)</span>
+              </div>
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="font-medium text-foreground">Fabric &amp; Fall</span>
+                <span className="text-emerald-700 font-semibold">Premium Couture</span>
+              </div>
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="font-medium text-foreground">Photography Compliments</span>
+                <span className="text-emerald-700 font-semibold">Exceptional</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center items-start sm:items-center text-center sm:text-left gap-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>Atelier Verified Client Feedback</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground font-light leading-relaxed">
+                All client reviews are verified by our stylists to preserve authentic quality and trial advice.
+              </p>
+            </div>
+          </div>
+
+          {/* Reviews List */}
+          {productReviews.length > 0 ? (
+            <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {productReviews.map((r) => (
+                <figure
+                  key={r.id}
+                  className="animate-fade-up relative flex flex-col justify-between rounded-3xl border border-border/80 bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <Stars rating={r.rating} />
+                      <Quote className="h-5 w-5 text-accent/40" />
+                    </div>
+
+                    <blockquote className="mt-4 text-xs leading-relaxed text-foreground/85 font-light italic">
+                      &ldquo;{r.text}&rdquo;
+                    </blockquote>
+                  </div>
+
+                  <figcaption className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-wine-deep font-display text-xs font-semibold text-accent shadow-soft">
+                        {r.initials || "CL"}
+                      </span>
+                      <div>
+                        <span className="block text-xs font-semibold text-foreground">{r.name}</span>
+                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-light">
+                          <CheckCircle2 className="h-2.5 w-2.5 text-accent" />
+                          Verified Client
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="rounded-full bg-secondary/80 px-2 py-0.5 text-[9px] font-medium text-primary">
+                      {r.date}
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-3xl border border-dashed border-border bg-card/60 p-10 text-center space-y-3">
+              <Quote className="mx-auto h-8 w-8 text-accent/50" />
+              <h4 className="font-display text-xl text-primary font-medium">Be the First to Review This Silhouette</h4>
+              <p className="mx-auto max-w-md text-xs text-muted-foreground font-light leading-relaxed">
+                Have you styled, worn, or rented this {product.category.toLowerCase()}? Help other brides and patrons by sharing your feedback, size advice, and event impressions.
+              </p>
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="mt-2 inline-flex items-center gap-2 rounded-full border border-primary bg-primary/5 px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-primary hover:text-white transition-all shadow-xs"
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+                <span>Write First Review</span>
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* -------------------------------------------------------------
             RELATED SILHOUETTES SECTION ("You May Also Admire")
             ------------------------------------------------------------- */}
         {related.length > 0 && (
@@ -1093,6 +1295,154 @@ export default function ProductDetailsPage() {
                 Close Guide
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------------
+          GIVE FEEDBACK TO PRODUCT MODAL
+          ------------------------------------------------------------- */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-gold-300/40">
+            <div className="flex items-center justify-between border-b border-border/80 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MessageSquarePlus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl text-primary font-semibold">Product Feedback</h3>
+                  <p className="text-[11px] text-muted-foreground font-light truncate max-w-[260px] sm:max-w-xs">
+                    {product.name}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowReviewModal(false)}
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary p-1"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {reviewSubmitted ? (
+              <div className="py-10 text-center space-y-3">
+                <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
+                <h4 className="font-display text-2xl text-primary font-medium">Thank You for Your Feedback!</h4>
+                <p className="mx-auto max-w-sm text-xs text-muted-foreground font-light leading-relaxed">
+                  Your review has been submitted to the atelier team. Once approved in the admin panel, it will be published live on this silhouette and featured in client testimonials.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="mt-5 space-y-4">
+                {/* Product Preview Card */}
+                <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 border border-border/60">
+                  <img
+                    src={displayImage || product.image}
+                    alt={product.name}
+                    className="h-12 w-12 rounded-xl object-cover border border-border/80 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-foreground">
+                      {product.name}
+                    </span>
+                    <span className="block text-[10px] text-muted-foreground uppercase tracking-wider">
+                      {product.category} · {inr(product.price)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rating Stars Selector */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1.5">
+                    Your Rating
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onMouseEnter={() => setHoverStar(star)}
+                          onMouseLeave={() => setHoverStar(0)}
+                          onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                          className="p-1 text-gold-400 hover:scale-110 transition-transform"
+                          aria-label={`${star} star`}
+                        >
+                          <Star
+                            className={`h-6 w-6 ${
+                              (hoverStar || reviewForm.rating) >= star
+                                ? "fill-gold-400 text-gold-400"
+                                : "text-border"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-primary ml-2">
+                      {reviewForm.rating} of 5 Stars
+                    </span>
+                  </div>
+                </div>
+
+                {/* Name Input */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1">
+                    Your Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={reviewForm.name}
+                    onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })}
+                    placeholder="e.g. Aishwarya Patil"
+                    className="w-full rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+
+                {/* Feedback Comment */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-foreground mb-1">
+                    Your Feedback &amp; Fitting Experience
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={reviewForm.text}
+                    onChange={(e) => setReviewForm({ ...reviewForm, text: e.target.value })}
+                    placeholder="Tell us about the fabric feel, trial fitting, compliments received, or event photography notes…"
+                    className="w-full rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+
+                {/* Admin Approval Notice Banner */}
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[11px] text-muted-foreground flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span>
+                    To ensure authentic boutique reviews, all client feedback is verified and approved from our admin panel before going live.
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/80">
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewModal(false)}
+                    className="rounded-full border border-border px-5 py-2 text-xs font-medium text-foreground hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="rounded-full bg-primary px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white shadow-lift hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {reviewSubmitting ? "Submitting…" : "Submit Feedback"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

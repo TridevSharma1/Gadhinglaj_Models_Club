@@ -11,7 +11,7 @@ interface NavItem {
   to: string;
   label: string;
   icon: string;
-  badgeKey?: "orders" | "rentals" | "lowStock" | "inquiries";
+  badgeKey?: "orders" | "rentals" | "lowStock" | "inquiries" | "reviews";
 }
 
 const nav: NavItem[] = [
@@ -24,7 +24,7 @@ const nav: NavItem[] = [
   { to: "/admin/orders", label: "Order", icon: "🛍️", badgeKey: "orders" },
   { to: "/admin/rentals", label: "Rental Studio", icon: "✨", badgeKey: "rentals" },
   { to: "/admin/offers", label: "Voucher And Offer", icon: "🎁" },
-  { to: "/admin/reviews", label: "Testimonials", icon: "⭐" },
+  { to: "/admin/reviews", label: "Testimonials", icon: "⭐", badgeKey: "reviews" },
   { to: "/admin/inquiries", label: "Inquiry", icon: "📩", badgeKey: "inquiries" },
   { to: "/admin/banners", label: "Hero Showcase", icon: "🖼️" },
   { to: "/admin/headers", label: "Header Image", icon: "🌄" },
@@ -43,7 +43,7 @@ export default function AdminShell({
   children: ReactNode;
   action?: ReactNode;
 }) {
-  const { admin, hydrated, logout, content, orders, bookings, products, inquiries } = useStore();
+  const { admin, hydrated, logout, content, orders, bookings, products, inquiries, reviews } = useStore();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -64,6 +64,7 @@ export default function AdminShell({
   const pendingRentals = bookings.filter((b) => b.status === "Pending").length;
   const lowStockCount = products.filter((p) => isProductLowStock(p, 3)).length;
   const newInquiriesCount = inquiries ? inquiries.filter((i) => i.status === "New").length : 0;
+  const pendingReviewsCount = reviews ? reviews.filter((r) => !r.approved).length : 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FAF7F2] lg:flex-row">
@@ -146,6 +147,8 @@ export default function AdminShell({
                 ? lowStockCount
                 : n.badgeKey === "inquiries"
                 ? newInquiriesCount
+                : n.badgeKey === "reviews"
+                ? pendingReviewsCount
                 : 0;
 
             const badgeBg =
@@ -153,6 +156,8 @@ export default function AdminShell({
                 ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
                 : n.badgeKey === "inquiries"
                 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                : n.badgeKey === "reviews"
+                ? "bg-amber-500/25 text-amber-300 border-amber-500/40 animate-pulse"
                 : "bg-gold-400/20 text-gold-300 border-gold-400/30";
 
             return (

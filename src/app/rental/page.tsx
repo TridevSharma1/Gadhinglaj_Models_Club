@@ -30,21 +30,21 @@ export default function RentalPage() {
   const { products } = useStore();
   const [selectedOccasion, setSelectedOccasion] = useState("All Occasions");
 
-  // Filter products: Shows ANY product that Admin marked as Rental (type === "rental" or category is rental or rentalPrice > 0)
+  // Filter products: Strictly shows ONLY products marked as Rental (p.type === "rental")
   const list = useMemo(() => {
     return products.filter((p) => {
       if (!p.active) return false;
-      const isRental =
-        p.type === "rental" ||
-        p.category?.toLowerCase().includes("rental") ||
-        (p.rentalPrice !== undefined && Number(p.rentalPrice) > 0);
+      const isRental = p.type === "rental";
 
       if (!isRental) return false;
 
       if (selectedOccasion === "All Occasions") return true;
 
       if (!p.occasion) return true; // keep visible if occasion isn't strictly defined
-      return p.occasion.toLowerCase().includes(selectedOccasion.toLowerCase().slice(0, 4));
+      return (
+        p.occasion.toLowerCase().includes(selectedOccasion.toLowerCase().slice(0, 4)) ||
+        selectedOccasion.toLowerCase().includes(p.occasion.toLowerCase().slice(0, 4))
+      );
     });
   }, [products, selectedOccasion]);
 

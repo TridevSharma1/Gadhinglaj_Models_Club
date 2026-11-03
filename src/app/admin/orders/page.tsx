@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import AdminShell, { card, input, btn } from "@/components/admin/AdminShell";
+import InvoiceDocument from "@/components/site/InvoiceDocument";
 import { inr, type Order } from "@/data/catalog";
 import { orderStatuses, useStore } from "@/lib/store";
 import { WhatsAppIcon } from "@/components/site/Icons";
+import { FileText, Printer } from "lucide-react";
 
 export default function AdminOrdersPage() {
   const { orders, update, deleteOrder, updateOrder } = useStore();
@@ -13,6 +15,7 @@ export default function AdminOrdersPage() {
 
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [emailStatus, setEmailStatus] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
 
@@ -241,6 +244,14 @@ export default function AdminOrdersPage() {
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5 text-xs">
                       <button
+                        onClick={() => setInvoiceOrder(o)}
+                        className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors flex items-center gap-1 shadow-2xs"
+                        title="View & Print Official Invoice"
+                      >
+                        <FileText className="h-3 w-3 text-[#D4AF37]" />
+                        <span>Invoice</span>
+                      </button>
+                      <button
                         onClick={() => setViewOrder(o)}
                         className="rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
                       >
@@ -365,19 +376,30 @@ export default function AdminOrdersPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/60">
-              {viewOrder.email ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border/60">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  disabled={sendingEmail}
-                  onClick={() => handleAdminSendInvoice(viewOrder)}
-                  className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                  onClick={() => setInvoiceOrder(viewOrder)}
+                  className="rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 flex items-center gap-1.5 shadow-2xs"
                 >
-                  {sendingEmail ? "Dispatching..." : "Email Invoice to Client"}
+                  <FileText className="h-3.5 w-3.5 text-[#D4AF37]" />
+                  <span>View &amp; Print Tax Invoice</span>
                 </button>
-              ) : (
-                <span className="text-[11px] text-muted-foreground italic">No email on file</span>
-              )}
+
+                {viewOrder.email ? (
+                  <button
+                    type="button"
+                    disabled={sendingEmail}
+                    onClick={() => handleAdminSendInvoice(viewOrder)}
+                    className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    {sendingEmail ? "Dispatching..." : "Email Invoice to Client"}
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground italic">No email on file</span>
+                )}
+              </div>
 
               <div className="flex gap-2">
                 <button
@@ -493,6 +515,14 @@ export default function AdminOrdersPage() {
             </div>
           </form>
         </div>
+      )}
+      {/* OFFICIAL INVOICE MODAL */}
+      {invoiceOrder && (
+        <InvoiceDocument
+          order={invoiceOrder}
+          isModal={true}
+          onClose={() => setInvoiceOrder(null)}
+        />
       )}
     </AdminShell>
   );

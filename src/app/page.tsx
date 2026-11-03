@@ -181,17 +181,23 @@ export default function Home() {
 
           <div className="mt-14 text-center">
             <Link
-              href="/shop"
+              href={tab === "rentals" ? "/rental" : tab === "readymade" ? "/readymade" : "/shop"}
               className="inline-flex items-center gap-2 rounded-full bg-primary px-9 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground shadow-lift transition-transform hover:-translate-y-0.5 hover:opacity-95"
             >
-              <span>Explore Complete Catalog</span>
+              <span>
+                {tab === "rentals"
+                  ? "Explore Complete Rental Wardrobe"
+                  : tab === "readymade"
+                  ? "Explore Ready-To-Wear Collection"
+                  : "Explore Complete Catalog"}
+              </span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 5. Luxury Rental Highlight Banner */}
+      {/* 5. Luxury Rental Highlight Banner & Showcase */}
       <section className="container-lux py-24">
         <div className="relative overflow-hidden rounded-[2.5rem] border border-border/80 bg-gradient-to-br from-primary via-wine-deep to-stone-950 p-8 md:p-16 text-white shadow-lift">
           <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
@@ -245,24 +251,74 @@ export default function Home() {
             </div>
 
             <div className="lg:col-span-5">
-              <div className="relative mx-auto max-w-sm overflow-hidden rounded-3xl border border-white/20 shadow-2xl">
-                <img
-                  src="/assets/p13.jpg"
-                  alt="Rental Collection Highlight"
-                  className="h-full w-full object-cover aspect-[3/4]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6 text-center">
-                  <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent-foreground">
-                    Client Favorite
-                  </span>
-                  <p className="mt-2 font-display text-xl text-white">Royal Scarlet Trail Gown</p>
-                  <p className="text-xs text-accent mt-0.5 font-medium">Rent from {inr(2899)} / 3 days</p>
+              {rentals[0] ? (
+                <Link
+                  href={`/product/${rentals[0].id}`}
+                  className="group relative mx-auto block max-w-sm overflow-hidden rounded-3xl border border-white/20 shadow-2xl transition-transform duration-500 hover:scale-[1.02]"
+                >
+                  <img
+                    src={rentals[0].image || rentals[0].colors?.[0]?.image || "/assets/p13.jpg"}
+                    alt={rentals[0].name}
+                    className="h-full w-full object-cover aspect-[3/4] transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-6 text-center">
+                    <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent-foreground">
+                      Client Favorite
+                    </span>
+                    <p className="mt-2 font-display text-xl text-white group-hover:text-accent transition-colors line-clamp-1">
+                      {rentals[0].name}
+                    </p>
+                    <p className="text-xs text-accent mt-0.5 font-medium">
+                      Rent from {inr(rentals[0].rentalPrice)} / 3 days
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <div className="relative mx-auto max-w-sm overflow-hidden rounded-3xl border border-white/20 shadow-2xl">
+                  <img
+                    src="/assets/p13.jpg"
+                    alt="Rental Collection Highlight"
+                    className="h-full w-full object-cover aspect-[3/4]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-6 text-center">
+                    <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent-foreground">
+                      Client Favorite
+                    </span>
+                    <p className="mt-2 font-display text-xl text-white">Royal Scarlet Trail Gown</p>
+                    <p className="text-xs text-accent mt-0.5 font-medium">Rent from {inr(2899)} / 3 days</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Featured Rental Outfits Showcase in Rental Section */}
+        {rentals.length > 0 && (
+          <div className="mt-16">
+            <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow text-gold-600">Dress Rental Studio</p>
+                <h3 className="font-display text-2xl sm:text-3xl font-normal text-primary">
+                  Trending Rental Silhouettes
+                </h3>
+                <p className="text-xs text-muted-foreground font-light mt-1">
+                  Handcrafted gowns, trails &amp; lehengas available strictly for 3-day boutique rental.
+                </p>
+              </div>
+              <Link
+                href="/rental"
+                className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary hover:text-gold-600 transition-colors"
+              >
+                <span>View All Rentals ({rentals.length})</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <ProductGrid products={rentals.slice(0, 4)} />
+          </div>
+        )}
       </section>
 
       {/* 6. Photoshoot Special Collection */}

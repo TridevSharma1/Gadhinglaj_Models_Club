@@ -149,6 +149,17 @@ type Ctx = State & {
     address?: UserAddress;
     preferredSize?: string;
   }) => Promise<{ success: boolean; error?: string }>;
+  submitReview: (reviewData: {
+    productId?: number;
+    productName?: string;
+    productImage?: string;
+    name: string;
+    rating: number;
+    text: string;
+  }) => Promise<{ success: boolean; review?: Review; error?: string }>;
+  updateReviewStatus: (id: number | string, approved: boolean) => Promise<boolean>;
+  deleteReview: (id: number | string) => Promise<boolean>;
+  editReviewItem: (review: Partial<Review> & { id: number | string }) => Promise<boolean>;
 };
 
 const StoreContext = createContext<Ctx | null>(null);
@@ -186,7 +197,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // 2. Fetch live data from MongoDB Atlas backend
   const refetchCatalog = useCallback(async () => {
     try {
-      const [catRes, subRes, prodRes, bookRes, banRes, headRes, contRes, ordRes, inqRes] = await Promise.all([
+      const [catRes, subRes, prodRes, bookRes, banRes, headRes, contRes, ordRes, inqRes, revRes] = await Promise.all([
         fetch("/api/categories").then((r) => r.json()).catch(() => ({ categories: null })),
         fetch("/api/subcategories").then((r) => r.json()).catch(() => ({ subcategories: null })),
         fetch("/api/products").then((r) => r.json()).catch(() => ({ products: null })),
@@ -196,6 +207,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         fetch("/api/site-content").then((r) => r.json()).catch(() => ({ content: null })),
         fetch("/api/orders").then((r) => r.json()).catch(() => ({ orders: null })),
         fetch("/api/inquiries").then((r) => r.json()).catch(() => ({ inquiries: null })),
+        fetch("/api/reviews").then((r) => r.json()).catch(() => ({ reviews: null })),
       ]);
 
       setState((s) => ({
@@ -209,6 +221,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         content: contRes?.content ? { ...s.content, ...contRes.content } : s.content,
         orders: Array.isArray(ordRes?.orders) && ordRes.orders.length > 0 ? ordRes.orders : s.orders,
         inquiries: Array.isArray(inqRes?.inquiries) && inqRes.inquiries.length > 0 ? inqRes.inquiries : s.inquiries,
+        reviews: Array.isArray(revRes?.reviews) && revRes.reviews.length > 0 ? revRes.reviews : s.reviews,
       }));
     } catch (err) {
       console.warn("Could not sync with MongoDB backend, using local state:", err);
@@ -603,6 +616,139 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state.content],
   );
 
+  const submitReview = useCallback(
+    async (reviewData: {
+      productId?: number;
+      productName?: string;
+      productImage?: string;
+      name: string;
+      rating: number;
+      text: string;
+    }): Promise<{ success: boolean; review?: Review; error?: string }> => {
+      const now = new Date();
+      const tempId = `REV-${Date.now()}`;
+      const initials =
+        reviewData.name
+          .trim()
+          .split(/\s+/)
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) || "CL";
+
+      const newReview: Review = {
+        id: tempId,
+        productId: reviewData.productId,
+        productName: reviewData.productName,
+        productImage: reviewData.productImage,
+        name: reviewData.name.trim(),
+        initials,
+        rating: reviewData.rating,
+        text: reviewData.text.trim(),
+        date: now.toISOString().split("T")[0],
+        approved: false, // Default: Pending approval from admin panel!
+      };
+
+      // Immediate optimistic update in state
+      setState((s) => ({
+        ...s,
+        reviews: [newReview, ...(s.reviews || [])],
+      }));
+
+      try {
+        const res = await fetch("/api/reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reviewData),
+        });
+        const data = await res.json();
+        if (data.success && data.review) {
+          const serverRev = data.review as Review;
+          setState((s) => ({
+            ...s,
+            reviews: s.reviews.map((r) => (r.id === tempId ? serverRev : r)),
+          }));
+          return { success: true, review: serverRev };
+        }
+      } catch (err: any) {
+        console.warn("Review saved locally, failed to sync with MongoDB backend:", err);
+      }
+      return { success: true, review: newReview };
+    },
+    [],
+  );
+
+  const updateReviewStatus = useCallback(
+    async (id: number | string, approved: boolean): Promise<boolean> => {
+      setState((s) => ({
+        ...s,
+        reviews: (s.reviews || []).map((r) =>
+          String(r.id) === String(id) ? { ...r, approved } : r
+        ),
+      }));
+
+      try {
+        const res = await fetch("/api/reviews", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: String(id), approved }),
+        });
+        const data = await res.json();
+        return !!data.success;
+      } catch (err) {
+        console.warn("Failed to update review status in MongoDB:", err);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const deleteReview = useCallback(
+    async (id: number | string): Promise<boolean> => {
+      setState((s) => ({
+        ...s,
+        reviews: (s.reviews || []).filter((r) => String(r.id) !== String(id)),
+      }));
+
+      try {
+        const res = await fetch(`/api/reviews?id=${encodeURIComponent(String(id))}`, {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        return !!data.success;
+      } catch (err) {
+        console.warn("Failed to delete review from MongoDB:", err);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const editReviewItem = useCallback(
+    async (rev: Partial<Review> & { id: number | string }): Promise<boolean> => {
+      setState((s) => ({
+        ...s,
+        reviews: (s.reviews || []).map((r) =>
+          String(r.id) === String(rev.id) ? { ...r, ...rev } : r
+        ),
+      }));
+
+      try {
+        const res = await fetch("/api/reviews", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...rev, id: String(rev.id) }),
+        });
+        const data = await res.json();
+        return !!data.success;
+      } catch (err) {
+        console.warn("Failed to edit review in MongoDB:", err);
+        return false;
+      }
+    },
+    [],
+  );
+
   const value = useMemo<Ctx>(
     () => ({
       ...state,
@@ -626,6 +772,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       loginCustomer,
       logoutCustomer,
       updateUserProfile,
+      submitReview,
+      updateReviewStatus,
+      deleteReview,
+      editReviewItem,
       addToCart: (productId, size, qty = 1, color = "") =>
         setState((s) => {
           const existing = s.cart.find(
@@ -839,6 +989,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       loginCustomer,
       logoutCustomer,
       updateUserProfile,
+      submitReview,
+      updateReviewStatus,
+      deleteReview,
+      editReviewItem,
     ],
   );
 
